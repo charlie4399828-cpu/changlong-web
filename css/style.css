@@ -1112,10 +1112,36 @@ ul { list-style: none; }
   margin-right: var(--space-sm);
 }
 
+.category-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}
+
 .category-count {
   font-size: 0.8rem;
   color: var(--color-mist);
   letter-spacing: 0.1em;
+}
+
+.category-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-celadon-deep);
+  letter-spacing: 0.08em;
+  transition: color var(--duration-fast), gap var(--duration-fast);
+}
+
+.category-view-all:hover {
+  color: var(--color-celadon);
+  gap: 0.4rem;
+}
+
+.category-view-all svg {
+  flex-shrink: 0;
 }
 
 .product-grid {
@@ -1786,6 +1812,39 @@ ul { list-style: none; }
   color: var(--color-celadon-deep);
 }
 
+/* ========== 商品列表页 ========== */
+.products-list-page {
+  padding-top: calc(var(--header-height) + var(--space-lg));
+  padding-bottom: var(--space-xl);
+  min-height: 100vh;
+}
+
+.products-list-breadcrumb {
+  font-size: 0.85rem;
+  color: var(--color-mist);
+  margin-bottom: var(--space-lg);
+  letter-spacing: 0.05em;
+}
+
+.products-list-breadcrumb a {
+  transition: color var(--duration-fast);
+}
+
+.products-list-breadcrumb a:hover {
+  color: var(--color-celadon-deep);
+}
+
+.products-list-breadcrumb span {
+  margin: 0 var(--space-xs);
+}
+
+.products-list-empty {
+  text-align: center;
+  color: var(--color-mist);
+  padding: var(--space-xl) 0;
+  letter-spacing: 0.1em;
+}
+
 /* ========== 商品详情页 ========== */
 .detail-page {
   padding-top: var(--header-height);
@@ -2336,6 +2395,11 @@ ul { list-style: none; }
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-xs);
+  }
+
+  .category-header-right {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .business-card {

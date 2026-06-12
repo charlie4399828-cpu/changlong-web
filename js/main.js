@@ -341,6 +341,8 @@ function escProductText(str) {
   return d.innerHTML;
 }
 
+const HOME_PRODUCT_LIMIT = 8;
+
 async function initProductCards() {
   const grid = document.getElementById("product-grids");
   const productData = (typeof CMS !== "undefined" && CMS.data?.products) || (typeof PRODUCTS !== "undefined" ? PRODUCTS : null);
@@ -350,30 +352,32 @@ async function initProductCards() {
     { key: "seasonal", label: "当季新品" },
     { key: "hot", label: "热销商品" }
   ];
-  const allLabel = CMS?.data?.productsSection?.allLabel || "全部商品";
-  const categories = [
-    ...modules.map(mod => ({ key: mod.key, label: mod.label })),
-    { key: "all", label: allLabel }
-  ];
 
-  grid.innerHTML = categories.map(cat => `
-    <div class="product-category" data-module="${cat.key}">
+  grid.innerHTML = modules.map(mod => `
+    <div class="product-category" data-module="${mod.key}">
       <div class="category-header reveal-left">
-        <h3 class="category-title">${escProductText(cat.label)}</h3>
-        <span class="category-count"></span>
+        <h3 class="category-title">${escProductText(mod.label)}</h3>
+        <div class="category-header-right"></div>
       </div>
-      <div class="product-grid" id="module-${cat.key}"></div>
+      <div class="product-grid" id="module-${mod.key}"></div>
     </div>`).join("");
 
-  for (const cat of categories) {
-    const container = document.getElementById(`module-${cat.key}`);
+  for (const mod of modules) {
+    const container = document.getElementById(`module-${mod.key}`);
     if (!container) continue;
 
-    const products = productData[cat.key] || [];
-    const countEl = container.closest(".product-category")?.querySelector(".category-count");
-    if (countEl) countEl.textContent = `共 ${products.length} 款`;
+    const products = productData[mod.key] || [];
+    const headerRight = container.closest(".product-category")?.querySelector(".category-header-right");
+    if (headerRight) {
+      const parts = [`<span class="category-count">共 ${products.length} 款</span>`];
+      if (products.length > HOME_PRODUCT_LIMIT) {
+        parts.push(`<a href="products.html?module=${encodeURIComponent(mod.key)}" class="category-view-all">查看全部<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>`);
+      }
+      headerRight.innerHTML = parts.join("");
+    }
 
-    const cards = await Promise.all(products.map((p, i) => createProductCard(p, i)));
+    const visible = products.slice(0, HOME_PRODUCT_LIMIT);
+    const cards = await Promise.all(visible.map((p, i) => createProductCard(p, i)));
     container.innerHTML = cards.join("");
 
     container.querySelectorAll(".product-card").forEach(card => {
