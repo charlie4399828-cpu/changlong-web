@@ -102,9 +102,8 @@ const CMSCloud = {
   },
 
   async fetchRemote() {
-    this.injectMobileLayoutCss();
-
     const cfg = this.getConfig();
+    this.injectMobileLayoutCss();
     if (!this.isEnabled()) {
       return this.fetchStaticFallback();
     }

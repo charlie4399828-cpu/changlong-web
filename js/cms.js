@@ -225,8 +225,9 @@ const CMS = {
     }
 
     if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
-      const hydrated = await CMSCloud.hydrateAllMediaRefs(this.data);
-      if (hydrated) persistSiteData(this.data);
+      CMSCloud.hydrateAllMediaRefs(this.data)
+        .then(hydrated => { if (hydrated) persistSiteData(this.data); })
+        .catch(err => console.warn("媒体链接解析失败:", err));
     }
 
     return this.data;

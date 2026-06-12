@@ -1,4 +1,19 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  window.addEventListener("storage", e => {
+    if (e.key === "changlong_site_data" || e.key === "changlong_cms_version") {
+      window.location.reload();
+    }
+  });
+
+  /* 先初始化滚动/导航，避免 CMS 云端加载慢时下方区块一直 opacity:0 */
+  initHeader();
+  initScrollReveal();
+  initSectionFade();
+  initParallax();
+  initMobileNav();
+  initSideNav();
+  revealVisibleContent();
+
   if (typeof CMS !== "undefined") {
     try {
       await CMS.init();
@@ -10,24 +25,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  window.addEventListener("storage", e => {
-    if (e.key === "changlong_site_data" || e.key === "changlong_cms_version") {
-      window.location.reload();
-    }
-  });
-
-  initHeader();
   initCarousel();
-  initScrollReveal();
-  initSectionFade();
-  initParallax();
-  initMobileNav();
-  initSideNav();
   await initProductCards();
+  observeRevealElements();
+  revealVisibleContent();
   initSmoothScroll();
   initTapEffect();
   if (typeof initSpotlight === "function") initSpotlight(true);
+
+  /* 兜底：3 秒后强制显示仍被动画隐藏的内容 */
+  setTimeout(revealAllContent, 3000);
 });
+
+function revealVisibleContent() {
+  const vh = window.innerHeight || 800;
+  document.querySelectorAll(REVEAL_SELECTOR).forEach(el => {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < vh * 1.1 && rect.bottom > -40) {
+      el.classList.add("revealed");
+    }
+  });
+  document.querySelectorAll(".scroll-section").forEach(el => {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < vh * 1.2) el.classList.add("in-view");
+  });
+}
+
+function revealAllContent() {
+  document.querySelectorAll(REVEAL_SELECTOR).forEach(el => el.classList.add("revealed"));
+  document.querySelectorAll(".scroll-section").forEach(el => el.classList.add("in-view"));
+}
 
 const REVEAL_SELECTOR = [
   ".reveal", ".reveal-left", ".reveal-right", ".reveal-scale",

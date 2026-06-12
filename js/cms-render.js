@@ -7,6 +7,9 @@ async function renderSiteFromCMS() {
   await renderAbout(d.about);
   renderProductsSection(d.productsSection);
   await renderContact(d.contact);
+
+  if (typeof observeRevealElements === "function") observeRevealElements();
+  if (typeof revealVisibleContent === "function") revealVisibleContent();
 }
 
 async function renderSiteMeta(site, options = {}) {
@@ -83,6 +86,8 @@ async function renderCarousel(carousel) {
     </div>`;
 
   if (typeof refreshSpotlight === "function") refreshSpotlight();
+  if (typeof observeRevealElements === "function") observeRevealElements();
+  if (typeof revealVisibleContent === "function") revealVisibleContent();
 }
 
 async function buildMediaBg(item) {
@@ -119,6 +124,7 @@ async function renderAbout(about) {
       return p;
     });
     paras.forEach(p => content.insertBefore(p, featuresEl));
+    if (typeof revealVisibleContent === "function") revealVisibleContent();
   }
 
   const feats = document.querySelectorAll(".about-feature");
@@ -136,13 +142,13 @@ async function renderAbout(about) {
   const caption = `<p class="about-logo-caption">${esc(about.caption)}</p>`;
 
   const wrap = showcase.closest(".about-image-wrap");
-  const isUploadedPhoto = url && CMS.isMediaId(about.media);
+  const isCloudOrUploadedPhoto = url && (CMS.isMediaId(about.media) || /^https?:\/\//i.test(about.media));
 
   if (type === "video" && url) {
     showcase.className = "about-image about-logo-showcase about-showcase--media";
     wrap?.classList.add("about-image-wrap--media");
     showcase.innerHTML = `<video class="about-media" src="${url}" autoplay muted loop playsinline></video>${caption}`;
-  } else if (url && isUploadedPhoto) {
+  } else if (url && isCloudOrUploadedPhoto) {
     showcase.className = "about-image about-logo-showcase about-showcase--media";
     wrap?.classList.add("about-image-wrap--media");
     showcase.innerHTML = `<img src="${url}" alt="${esc(about.shopTitle)}" class="about-media" loading="lazy" decoding="async">${caption}`;
