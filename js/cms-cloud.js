@@ -1,6 +1,7 @@
 const CMSCloud = {
   PASSWORD_KEY: "changlong_cms_edit_password",
   lastSyncStatus: null,
+  storageUrlCache: new Map(),
 
   getConfig() {
     const fromFile = window.CMS_CLOUD || {};
@@ -186,6 +187,60 @@ const CMSCloud = {
     );
   },
 
+  storageObjectBase(mediaId) {
+    return "media/" + mediaId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  },
+
+  async resolveStorageUrl(mediaId) {
+    if (!mediaId?.startsWith("media_")) return "";
+    if (this.storageUrlCache.has(mediaId)) {
+      return this.storageUrlCache.get(mediaId) || "";
+    }
+
+    const cfg = this.getConfig();
+    if (!cfg.supabaseUrl) return "";
+
+    const base = this.storageObjectBase(mediaId);
+    const exts = ["jpg", "jpeg", "png", "webp", "gif", "svg", "mp4", "webm"];
+    for (const ext of exts) {
+      const url = this.publicStorageUrl(cfg, base + "." + ext);
+      try {
+        const res = await fetch(url, { method: "HEAD", cache: "force-cache" });
+        if (res.ok) {
+          this.storageUrlCache.set(mediaId, url);
+          return url;
+        }
+      } catch {
+        /* try next extension */
+      }
+    }
+
+    this.storageUrlCache.set(mediaId, "");
+    return "";
+  },
+
+  async hydrateAllMediaRefs(data) {
+    const refs = new Set();
+    this.collectMediaRefs(data, refs);
+    if (!refs.size) return false;
+
+    const urlMap = new Map();
+    for (const ref of refs) {
+      const url = await this.resolveStorageUrl(ref);
+      if (url) urlMap.set(ref, url);
+    }
+    if (!urlMap.size) return false;
+
+    this.replaceMediaRefs(data, urlMap);
+    return true;
+  },
+
+  countRemainingMediaRefs(data) {
+    const refs = new Set();
+    this.collectMediaRefs(data, refs);
+    return refs.size;
+  },
+
   async uploadMediaBlob(blob, mediaId, type, name) {
     const cfg = this.getConfig();
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
@@ -229,18 +284,22 @@ const CMSCloud = {
     for (const ref of refs) {
       if (!ref.startsWith("media_")) continue;
       const record = await getMediaRecord(ref);
-      if (!record?.blob) continue;
-      try {
-        const url = await this.uploadMediaBlob(
-          record.blob,
-          ref,
-          record.type,
-          record.name
-        );
-        urlMap.set(ref, url);
-      } catch (err) {
-        console.warn("上传媒体到云端失败:", ref, err);
+      if (record?.blob) {
+        try {
+          const url = await this.uploadMediaBlob(
+            record.blob,
+            ref,
+            record.type,
+            record.name
+          );
+          urlMap.set(ref, url);
+          continue;
+        } catch (err) {
+          console.warn("上传媒体到云端失败:", ref, err);
+        }
       }
+      const existing = await this.resolveStorageUrl(ref);
+      if (existing) urlMap.set(ref, existing);
     }
 
     this.replaceMediaRefs(copy, urlMap);

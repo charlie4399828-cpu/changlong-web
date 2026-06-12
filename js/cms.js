@@ -224,6 +224,11 @@ const CMS = {
       persistSiteData(this.data);
     }
 
+    if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
+      const hydrated = await CMSCloud.hydrateAllMediaRefs(this.data);
+      if (hydrated) persistSiteData(this.data);
+    }
+
     return this.data;
   },
 
@@ -252,6 +257,8 @@ const CMS = {
 
     if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
       try {
+        await CMSCloud.hydrateAllMediaRefs(this.data);
+        persistSiteData(this.data);
         await CMSCloud.syncToCloud(this.data);
         this.lastCloudError = "";
       } catch (err) {
@@ -274,11 +281,23 @@ const CMS = {
     if (!ref) return "";
     if (!this.isMediaId(ref)) return ref;
     if (this.mediaCache.has(ref)) return this.mediaCache.get(ref);
+
     const record = await getMediaRecord(ref);
-    if (!record) return "";
-    const url = URL.createObjectURL(record.blob);
-    this.mediaCache.set(ref, url);
-    return url;
+    if (record?.blob) {
+      const url = URL.createObjectURL(record.blob);
+      this.mediaCache.set(ref, url);
+      return url;
+    }
+
+    if (typeof CMSCloud !== "undefined") {
+      const cloudUrl = await CMSCloud.resolveStorageUrl(ref);
+      if (cloudUrl) {
+        this.mediaCache.set(ref, cloudUrl);
+        return cloudUrl;
+      }
+    }
+
+    return "";
   },
 
   async uploadFile(file) {
