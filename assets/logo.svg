@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d4e4dc"/>
+      <stop offset="100%" stop-color="#7a9a8c"/>
+    </linearGradient>
+    <linearGradient id="flag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b8cfc4"/>
+      <stop offset="100%" stop-color="#7a9a8c"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="55" stroke="url(#ring)" stroke-width="1.4"/>
+  <circle cx="60" cy="60" r="49" stroke="#d4e4dc" stroke-width="0.7" opacity="0.65"/>
+  <line x1="36" y1="32" x2="36" y2="80" stroke="#7a9a8c" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+  <path d="M36 34 C50 29, 57 36, 74 31 C76.5 40, 75 51, 72 59 C57 55, 49 48, 36 53 Z" fill="url(#flag)"/>
+  <path d="M36 34 C50 29, 57 36, 74 31 C76.5 40, 75 51, 72 59 C57 55, 49 48, 36 53 Z" fill="none" stroke="#6d8f82" stroke-width="0.7" opacity="0.45"/>
+  <text x="55" y="47" text-anchor="middle" font-family="'Noto Serif SC','Source Han Serif SC',serif" font-size="12" font-weight="600" fill="#f7f4ef" letter-spacing="1.5">??</text>
+  <text x="60" y="74" text-anchor="middle" font-family="Arial,sans-serif" font-size="7.2" font-weight="600" fill="#7a9a8c" letter-spacing="2.8">CHANG LONG</text>
+  <line x1="42" y1="78" x2="78" y2="78" stroke="#c5d8ce" stroke-width="0.6"/>
+</svg>

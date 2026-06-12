@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#dce8e2"/>
+      <stop offset="100%" stop-color="#8fb3a0"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <path d="M0 360 Q160 280 320 330 T640 310 T800 350 L800 600 L0 600 Z" fill="#7a9a8c" opacity="0.55"/>
+  <path d="M0 420 Q200 340 400 390 T800 400 L800 600 L0 600 Z" fill="#5c7a6c" opacity="0.5"/>
+  <path d="M0 480 Q180 400 360 450 T720 430 T800 470 L800 600 L0 600 Z" fill="#4a6658" opacity="0.45"/>
+  <ellipse cx="180" cy="260" rx="160" ry="55" fill="#f0ebe3" opacity="0.65"/>
+  <ellipse cx="580" cy="220" rx="200" ry="60" fill="#e8e4dc" opacity="0.55"/>
+  <circle cx="650" cy="150" r="55" fill="none" stroke="#6d8f82" stroke-width="2" opacity="0.45"/>
+  <circle cx="650" cy="150" r="40" fill="none" stroke="#a8c4b8" stroke-width="1.2" opacity="0.5"/>
+  <path d="M120 100 Q150 180 130 260" fill="none" stroke="#5c7a6c" stroke-width="2.5" opacity="0.35" stroke-linecap="round"/>
+  <path d="M160 90 Q195 170 175 250" fill="none" stroke="#7a9a8c" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+  <text x="400" y="80" text-anchor="middle" font-family="serif" font-size="48" fill="#7a9a8c" opacity="0.12">?</text>
+</svg>

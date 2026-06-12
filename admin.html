@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>内容管理 — 昌隆茶舍</title>
+  <link rel="stylesheet" href="css/admin.css?v=2026061301">
+  <link rel="icon" href="assets/logo-icon.svg" type="image/svg+xml">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">昌隆 · 内容管理</div>
+      <nav class="admin-nav" id="admin-nav">
+        <button class="admin-nav-btn active" data-panel="carousel">轮播图</button>
+        <button class="admin-nav-btn" data-panel="about">店铺介绍</button>
+        <button class="admin-nav-btn" data-panel="products">产品管理</button>
+        <button class="admin-nav-btn" data-panel="contact">联系方式</button>
+        <button class="admin-nav-btn" data-panel="site">站点设置</button>
+        <button class="admin-nav-btn" data-panel="backup">备份恢复</button>
+      </nav>
+      <div class="admin-sidebar-footer">
+        <a href="index.html" class="admin-btn admin-btn-outline" id="btn-preview" style="text-decoration:none;text-align:center;">预览网站</a>
+        <button class="admin-btn admin-btn-primary" id="btn-save-all">保存全部</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <div class="admin-header">
+        <h1 id="panel-title">轮播图管理</h1>
+        <span id="save-status" style="font-size:0.8rem;color:var(--color-mist);"></span>
+      </div>
+
+      <div id="panel-carousel" class="admin-panel active"></div>
+      <div id="panel-about" class="admin-panel"></div>
+      <div id="panel-products" class="admin-panel"></div>
+      <div id="panel-contact" class="admin-panel"></div>
+      <div id="panel-site" class="admin-panel"></div>
+      <div id="panel-backup" class="admin-panel"></div>
+    </main>
+  </div>
+
+  <div class="admin-toast" id="toast"></div>
+
+  <script src="site-config.js?v=2026061301"></script>
+  <script src="js/products.js?v=2026061301"></script>
+  <script src="js/cms-storage.js?v=2026061301"></script>
+  <script src="js/cms.js?v=2026061301"></script>
+  <script src="js/image-crop.js?v=2026061301"></script>
+  <script src="js/site-qr.js?v=2026061301"></script>
+  <script src="js/admin.js?v=2026061301"></script>
+</body>
+</html>

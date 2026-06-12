@@ -1,0 +1,284 @@
+/* ========== 双向滚动渐入渐出 ========== */
+.reveal,
+.reveal-left,
+.reveal-right,
+.reveal-scale,
+.reveal-fade,
+.reveal-blur,
+.reveal-up {
+  will-change: opacity, transform, filter;
+  transition:
+    opacity 1s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 1s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+.reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(60px);
+}
+
+.reveal-right.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.88) translateY(20px);
+}
+
+.reveal-scale.revealed {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.reveal-fade {
+  opacity: 0;
+  transform: none;
+}
+
+.reveal-fade.revealed {
+  opacity: 1;
+}
+
+.reveal-blur {
+  opacity: 0;
+  filter: blur(12px);
+  transform: translateY(30px);
+}
+
+.reveal-blur.revealed {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.reveal-up {
+  opacity: 0;
+  transform: translateY(80px);
+}
+
+.reveal-up.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 区块级淡入淡出 */
+.scroll-section {
+  opacity: 0.3;
+  transform: translateY(30px);
+  transition:
+    opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-section.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 文字逐行渐入 */
+.text-reveal-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.text-reveal-line.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 延迟阶梯 */
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+.delay-4 { transition-delay: 0.4s; }
+.delay-5 { transition-delay: 0.5s; }
+.delay-6 { transition-delay: 0.6s; }
+.delay-7 { transition-delay: 0.7s; }
+.delay-8 { transition-delay: 0.8s; }
+
+/* 轮播高级淡转 */
+.carousel-slide {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 1.2s;
+  position: absolute;
+  inset: 0;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1;
+}
+
+.carousel-slide.exiting {
+  opacity: 0;
+  z-index: 0;
+}
+
+/* 页面过渡 */
+.page-transition {
+  animation: pageFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 导航入场 */
+@keyframes headerSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 光晕呼吸 */
+@keyframes shimmer {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes floatSoft {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+}
+
+@keyframes floatReverse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+
+@keyframes inkSpread {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { opacity: 0.06; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+@keyframes lineExpand {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 8px 32px rgba(61, 59, 56, 0.08),
+      0 0 0 1px rgba(168, 196, 184, 0.1);
+  }
+  50% {
+    box-shadow: 0 16px 48px rgba(61, 59, 56, 0.12),
+      0 0 20px rgba(168, 196, 184, 0.15);
+  }
+}
+
+@keyframes shineSweep {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+@keyframes scrollLineDrop {
+  0% { transform: scaleY(0); transform-origin: top; opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: scaleY(1); transform-origin: top; opacity: 0.3; }
+}
+
+/* 微震动点击 */
+@keyframes tapPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+.tap-active {
+  animation: tapPulse 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 名片光影 */
+@keyframes cardGlow {
+  0%, 100% {
+    box-shadow:
+      0 8px 32px rgba(61, 59, 56, 0.08),
+      0 0 0 1px rgba(168, 196, 184, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  50% {
+    box-shadow:
+      0 20px 60px rgba(61, 59, 56, 0.14),
+      0 0 30px rgba(168, 196, 184, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+  }
+}
+
+/* 数字计数动画 */
+@keyframes countPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.about-feature.revealed .about-feature-num {
+  animation: countPop 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 分割线展开 */
+.section-divider.revealed {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+/* 视差层 */
+.parallax-layer {
+  will-change: transform;
+  transition: transform 0.1s linear;
+}
+
+/* 减少动态偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-left, .reveal-right, .reveal-scale,
+  .reveal-fade, .reveal-blur, .reveal-up, .scroll-section {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
