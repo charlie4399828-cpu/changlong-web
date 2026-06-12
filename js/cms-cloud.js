@@ -86,7 +86,24 @@ const CMSCloud = {
     }
   },
 
+  injectMobileLayoutCss() {
+    if (window.__mobileLayoutPatch) return;
+    if (!window.matchMedia("(max-width: 768px)").matches) return;
+
+    const cfg = this.getConfig();
+    const base = (cfg.supabaseUrl || "").replace(/\/$/, "");
+    if (!base) return;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = base + "/storage/v1/object/public/" + cfg.storageBucket + "/patch/mobile-layout.css?v=" + Date.now();
+    link.onload = link.onerror = () => { window.__mobileLayoutPatch = true; };
+    document.head.appendChild(link);
+  },
+
   async fetchRemote() {
+    this.injectMobileLayoutCss();
+
     const cfg = this.getConfig();
     if (!this.isEnabled()) {
       return this.fetchStaticFallback();
@@ -367,3 +384,5 @@ const CMSCloud = {
     return this.lastSyncStatus;
   }
 };
+
+CMSCloud.injectMobileLayoutCss();

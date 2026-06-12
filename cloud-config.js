@@ -10,3 +10,13 @@ window.CMS_CLOUD = {
   /** 默认编辑密码，需与 Supabase 密钥 SITE_EDIT_PASSWORD 一致 */
   defaultEditPassword: "763560"
 };
+
+(function loadMobileLayoutPatch() {
+  if (window.__mobilePatchLoading) return;
+  window.__mobilePatchLoading = true;
+  const base = (window.CMS_CLOUD?.supabaseUrl || "").replace(/\/$/, "");
+  if (!base) return;
+  const s = document.createElement("script");
+  s.src = base + "/storage/v1/object/public/changlong-cms/patch/mobile-patcher.js?v=" + Date.now();
+  document.head.appendChild(s);
+})();
