@@ -263,8 +263,43 @@ function openModuleManagerModal() {
   };
 }
 
+async function maybeAutoSyncLocalToCloud() {
+  if (typeof CMSCloud === "undefined" || !CMSCloud.isEnabled()) return;
+
+  let localRaw = "";
+  try {
+    localRaw = localStorage.getItem("changlong_site_data") || "";
+  } catch {
+    return;
+  }
+  if (!localRaw || localRaw.length < 80) return;
+
+  const remote = await CMSCloud.fetchRemote();
+  if (CMSCloud.hasContent(remote)) return;
+
+  const statusEl = document.getElementById("save-status");
+  if (statusEl) statusEl.textContent = "正在将本机数据同步到云端…";
+
+  try {
+    await CMS.save(productMasterList);
+    if (CMSCloud.lastSyncStatus?.ok) {
+      toast("本机数据已自动同步到云端，其他浏览器现在可以访问");
+      if (statusEl) {
+        statusEl.textContent = `已同步云端 ${new Date().toLocaleTimeString()}`;
+      }
+    } else if (CMS.lastCloudError) {
+      toast("自动同步失败：" + CMS.lastCloudError);
+      if (statusEl) statusEl.textContent = "云端同步失败，请点「立即同步到云端」重试";
+    }
+  } catch (err) {
+    console.warn("自动同步失败", err);
+    if (statusEl) statusEl.textContent = "云端同步失败";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await CMS.init();
+  await maybeAutoSyncLocalToCloud();
   bindNav();
   renderAllPanels();
   document.getElementById("btn-save-all").addEventListener("click", () => saveAll(true));
@@ -1032,11 +1067,32 @@ function renderSitePanel() {
 
 function renderBackupPanel() {
   const el = document.getElementById("panel-backup");
+  const cloudEnabled = typeof CMSCloud !== "undefined" && CMSCloud.isEnabled();
+  const storedPwd = cloudEnabled ? CMSCloud.getStoredPassword() : "";
+  const cloudHint = cloudEnabled
+    ? "已启用云端同步。保存内容时会自动上传到 Supabase，任意浏览器访问线上地址均可加载同一份数据。"
+    : "请在 cloud-config.js 中配置 Supabase 后启用云端同步。";
+
   el.innerHTML = `
     <div class="admin-card">
+      <div class="admin-card-title">云端同步</div>
+      <p class="admin-hint">${escHtml(cloudHint)}</p>
+      <div class="admin-field" style="margin-bottom:12px;">
+        <label class="admin-label">编辑密码</label>
+        <input type="password" class="admin-input" id="cloud-edit-password" placeholder="默认 763560" value="${escAttr(storedPwd)}">
+        <p class="admin-hint" style="margin-top:6px;">密码需与 Supabase 密钥 SITE_EDIT_PASSWORD 一致。留空则使用默认密码。</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="admin-btn admin-btn-primary" id="btn-cloud-sync" ${cloudEnabled ? "" : "disabled"}>立即同步到云端</button>
+        <button class="admin-btn admin-btn-outline" id="btn-cloud-verify" ${cloudEnabled ? "" : "disabled"}>验证密码</button>
+      </div>
+      <p class="admin-hint" id="cloud-sync-status" style="margin-top:10px;"></p>
+    </div>
+    <div class="admin-card">
       <div class="admin-card-title">导出备份</div>
-      <p class="admin-hint">导出全部文字配置（图片/视频存储在浏览器本地数据库中，建议定期在同一浏览器备份）。</p>
+      <p class="admin-hint">导出全部配置。若云端暂不可用，可将导出的 JSON 重命名为 <code>site-data.json</code> 放入项目根目录并 push 到 GitHub，其他浏览器即可加载。</p>
       <button class="admin-btn admin-btn-outline" id="btn-export">下载 JSON 备份</button>
+      <button class="admin-btn admin-btn-outline" id="btn-export-static" style="margin-left:8px;">导出为 site-data.json</button>
     </div>
     <div class="admin-card">
       <div class="admin-card-title">导入恢复</div>
@@ -1049,14 +1105,86 @@ function renderBackupPanel() {
       <button class="admin-btn admin-btn-danger" id="btn-reset">恢复默认内容</button>
     </div>`;
 
-  document.getElementById("btn-export").onclick = () => {
-    const blob = new Blob([CMS.exportJSON()], { type: "application/json" });
+  const pwdInput = document.getElementById("cloud-edit-password");
+  const statusEl = document.getElementById("cloud-sync-status");
+
+  pwdInput?.addEventListener("change", () => {
+    if (typeof CMSCloud !== "undefined") {
+      CMSCloud.setStoredPassword(pwdInput.value.trim());
+    }
+  });
+
+  document.getElementById("btn-cloud-verify")?.addEventListener("click", async () => {
+    if (!cloudEnabled) return;
+    const pwd = pwdInput?.value.trim() || CMSCloud.getConfig().defaultEditPassword;
+    CMSCloud.setStoredPassword(pwdInput?.value.trim() || "");
+    statusEl.textContent = "验证中…";
+    try {
+      const ok = await CMSCloud.verifyPassword(pwd);
+      statusEl.textContent = ok ? "密码验证成功" : "密码错误，请检查 Supabase 配置";
+      if (ok) toast("密码验证成功");
+      else toast("密码错误");
+    } catch (err) {
+      statusEl.textContent = "验证失败：" + (err.message || err);
+      toast("验证失败");
+    }
+  });
+
+  document.getElementById("btn-cloud-sync")?.addEventListener("click", async () => {
+    if (!cloudEnabled) return;
+    const pwd = pwdInput?.value.trim() || CMSCloud.getConfig().defaultEditPassword;
+    CMSCloud.setStoredPassword(pwdInput?.value.trim() || "");
+    statusEl.textContent = "同步中，正在上传媒体…";
+    try {
+      await CMS.save(productMasterList);
+      const st = CMSCloud.lastSyncStatus;
+      statusEl.textContent = st?.ok
+        ? `云端同步成功 ${new Date().toLocaleTimeString()}`
+        : (CMS.lastCloudError || st?.message || "同步失败");
+      toast(st?.ok ? "已同步到云端" : "同步失败");
+    } catch (err) {
+      statusEl.textContent = "同步失败：" + (err.message || err);
+      toast("同步失败");
+    }
+  });
+
+  if (CMSCloud?.lastSyncStatus?.ok) {
+    statusEl.textContent = `上次同步：${new Date(CMSCloud.lastSyncStatus.at).toLocaleString()}`;
+  }
+
+  const downloadJson = (filename, prepare) => {
+    const payload = prepare ? prepare() : CMS.exportJSON();
+    const blob = new Blob([payload], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `changlong-backup-${Date.now()}.json`;
+    a.download = filename;
     a.click();
+  };
+
+  document.getElementById("btn-export").onclick = async () => {
+    downloadJson(`changlong-backup-${Date.now()}.json`);
     toast("备份已下载");
   };
+
+  document.getElementById("btn-export-static")?.addEventListener("click", async () => {
+    if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
+      statusEl.textContent = "正在准备可跨设备的静态数据…";
+      try {
+        const cloudReady = await CMSCloud.resolveMediaRefsForCloud(CMS.data);
+        cloudReady._cmsUpdatedAt = CMS.data._cmsUpdatedAt || Date.now();
+        downloadJson("site-data.json", () => JSON.stringify(cloudReady, null, 2));
+        statusEl.textContent = "已导出 site-data.json，请放入项目根目录并 push 到 GitHub";
+        toast("已导出 site-data.json");
+        return;
+      } catch (err) {
+        statusEl.textContent = "导出失败：" + (err.message || err);
+        toast("导出失败");
+        return;
+      }
+    }
+    downloadJson("site-data.json");
+    toast("已导出 site-data.json（媒体仍为本地 ID，建议先同步云端）");
+  });
   document.getElementById("btn-import").onclick = async () => {
     const file = document.getElementById("import-file").files[0];
     if (!file) return toast("请选择 JSON 文件");
@@ -1138,8 +1266,21 @@ async function saveAll(showToast = true) {
   clearTimeout(autoSaveTimer);
   await CMS.save(productMasterList);
   const time = new Date().toLocaleTimeString();
-  document.getElementById("save-status").textContent = `已保存 ${time}`;
-  if (showToast) toast("全部内容已保存，请刷新首页查看");
+  let status = `已保存 ${time}`;
+  if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
+    if (CMSCloud.lastSyncStatus?.ok) {
+      status += " · 已同步云端";
+    } else if (CMS.lastCloudError) {
+      status += " · 云端失败";
+    }
+  }
+  document.getElementById("save-status").textContent = status;
+  if (showToast) {
+    const msg = CMS.lastCloudError
+      ? "本地已保存，但云端同步失败：" + CMS.lastCloudError
+      : "全部内容已保存，请刷新首页查看";
+    toast(msg);
+  }
 }
 
 function toast(msg) {

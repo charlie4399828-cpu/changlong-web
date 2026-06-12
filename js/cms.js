@@ -189,17 +189,41 @@ const CMS = {
     return this.data.productsSection.modules;
   },
 
+  buildMergedData(defaults, saved) {
+    const merged = saved ? this.deepMerge(defaults, saved) : defaults;
+    if (saved?.products) {
+      merged.products = this.mergeProductCategories(defaults.products, saved.products);
+    }
+    return merged;
+  },
+
   async init() {
     await openCMSDatabase();
     const defaults = this.buildDefaultData();
-    const saved = loadSiteData();
-    this.data = saved ? this.deepMerge(defaults, saved) : defaults;
-    if (saved?.products) {
-      this.data.products = this.mergeProductCategories(defaults.products, saved.products);
+    const localSaved = loadSiteData();
+    const localData = localSaved ? this.buildMergedData(defaults, localSaved) : null;
+
+    let remoteData = null;
+    if (typeof CMSCloud !== "undefined") {
+      remoteData = await CMSCloud.fetchRemote();
+    }
+
+    const picked = typeof CMSCloud !== "undefined"
+      ? CMSCloud.pickNewer(localData, remoteData)
+      : localData;
+
+    this.data = picked || defaults;
+    if (picked?.products) {
+      this.data.products = this.mergeProductCategories(defaults.products, picked.products);
     }
     this.normalizeContact();
     this.normalizeProductModules();
     this.syncProductsGlobal();
+
+    if (remoteData && picked === remoteData) {
+      persistSiteData(this.data);
+    }
+
     return this.data;
   },
 
@@ -221,9 +245,20 @@ const CMS = {
     if (Array.isArray(masterProductList)) {
       this.rebuildProductCategories(masterProductList);
     }
+    this.data._cmsUpdatedAt = Date.now();
     persistSiteData(this.data);
     localStorage.setItem("changlong_cms_version", String(Date.now()));
     this.syncProductsGlobal();
+
+    if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
+      try {
+        await CMSCloud.syncToCloud(this.data);
+        this.lastCloudError = "";
+      } catch (err) {
+        console.warn("云端同步失败（本地已保存）:", err.message || err);
+        this.lastCloudError = err.message || String(err);
+      }
+    }
   },
 
   async reset() {
@@ -252,7 +287,15 @@ const CMS = {
     if (file.size > maxSize) {
       throw new Error(file.type.startsWith("video/") ? "视频不能超过 80MB" : "图片不能超过 10MB");
     }
-    return saveMediaFile(file);
+    const localId = await saveMediaFile(file);
+    if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
+      try {
+        return await CMSCloud.uploadMediaFile(file, localId);
+      } catch (err) {
+        console.warn("云端媒体上传失败，使用本地缓存:", err);
+      }
+    }
+    return localId;
   },
 
   inferProductModules(product) {
