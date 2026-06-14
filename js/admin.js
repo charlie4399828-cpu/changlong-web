@@ -756,6 +756,10 @@ function openProductEditorModal(product, index) {
         <button type="button" class="admin-modal-close" aria-label="关闭">×</button>
       </div>
       <div class="admin-modal-body" id="product-editor-body"></div>
+      <div class="admin-modal-footer">
+        <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-del>删除商品</button>
+        <button type="button" class="admin-btn admin-btn-primary" data-save>保存</button>
+      </div>
     </div>`;
 
   const close = () => {
@@ -771,6 +775,22 @@ function openProductEditorModal(product, index) {
   document.body.appendChild(overlay);
   const body = overlay.querySelector("#product-editor-body");
   body.appendChild(createProductEditorForm(product, index));
+
+  overlay.querySelector("[data-save]").onclick = async () => {
+    syncProductMaster();
+    await saveAll(true);
+    close();
+    renderProductsPanel();
+  };
+
+  overlay.querySelector("[data-del]").onclick = async () => {
+    if (!await confirmDelete(`确定删除商品「${product.name}」吗？`)) return;
+    productMasterList.splice(index, 1);
+    syncProductMaster();
+    await saveAll(true);
+    close();
+    renderProductsPanel();
+  };
 }
 
 function createProductEditorForm(product, index) {
@@ -820,9 +840,6 @@ function createProductEditorForm(product, index) {
       <div class="admin-upload">
         <input type="file" accept="image/*" multiple data-gallery-upload>
       </div>
-    </div>
-    <div class="admin-actions">
-      <button class="admin-btn admin-btn-danger admin-btn-sm" data-del>删除商品</button>
     </div>`;
 
   bindFields(div, product);
@@ -864,14 +881,6 @@ function createProductEditorForm(product, index) {
   div.querySelector('[data-f="features"]').oninput = e => {
     product.features = e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
     scheduleAutoSave();
-  };
-
-  div.querySelector("[data-del]").onclick = async () => {
-    if (!await confirmDelete(`确定删除商品「${product.name}」吗？`)) return;
-    productMasterList.splice(index, 1);
-    syncProductMaster();
-    document.querySelector(".admin-modal-overlay")?.remove();
-    renderProductsPanel();
   };
 
   setupMediaUpload(div.querySelector("[data-upload]"), product, "media", div.querySelector(".media-preview-wrap"), { cropSlot: "product" });

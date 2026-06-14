@@ -856,6 +856,17 @@ body {
   background: transparent;
 }
 
+.admin-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-ink-light);
+  background: var(--color-white);
+  flex-shrink: 0;
+}
+
 .admin-site-qr-body {
   display: flex;
   flex-wrap: wrap;
