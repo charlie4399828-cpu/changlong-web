@@ -145,7 +145,7 @@ function bindModulePicker(container, product, options = {}) {
           product.tag = getModuleLabel(key);
           options.onTagAutoFill?.(product.tag);
         }
-        syncProductMaster();
+        (options.silent ? rebuildProductsFromMaster : syncProductMaster)();
         refreshModulePicker(container, product);
         options.onChange?.();
       } else if (key) {
@@ -160,7 +160,7 @@ function bindModulePicker(container, product, options = {}) {
         product.tag = getModuleLabel(value);
         options.onTagAutoFill?.(product.tag);
       }
-      syncProductMaster();
+      (options.silent ? rebuildProductsFromMaster : syncProductMaster)();
       refreshModulePicker(container, product);
       options.onChange?.();
     }
@@ -170,7 +170,7 @@ function bindModulePicker(container, product, options = {}) {
     chip.addEventListener("click", () => {
       const key = chip.dataset.chip;
       product.modules = product.modules.filter(m => m !== key);
-      syncProductMaster();
+      (options.silent ? rebuildProductsFromMaster : syncProductMaster)();
       refreshModulePicker(container, product);
       options.onChange?.();
     });
@@ -299,6 +299,7 @@ async function maybeAutoSyncLocalToCloud() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   await CMS.init();
+  reloadProductMasterList();
   await maybeAutoSyncLocalToCloud();
   bindNav();
   renderAllPanels();
@@ -528,13 +529,58 @@ function renderAboutPanel() {
 }
 
 function ensureProductMasterList() {
+  if (!productMasterList) {
+    productMasterList = CMS.getMasterProductList();
+  }
+  return productMasterList;
+}
+
+function reloadProductMasterList() {
   productMasterList = CMS.getMasterProductList();
   return productMasterList;
 }
 
-function syncProductMaster() {
+function rebuildProductsFromMaster() {
   CMS.rebuildProductCategories(productMasterList);
+}
+
+function syncProductMaster() {
+  rebuildProductsFromMaster();
   scheduleAutoSave();
+}
+
+async function saveCurrentProduct(product, showToast = true) {
+  ensureProductMasterList();
+  const idx = productMasterList.findIndex(p => p.id === product.id);
+  if (idx < 0) {
+    productMasterList.push(JSON.parse(JSON.stringify(product)));
+  } else {
+    Object.assign(productMasterList[idx], product);
+  }
+
+  clearTimeout(autoSaveTimer);
+  rebuildProductsFromMaster();
+  await CMS.save(productMasterList);
+
+  const time = new Date().toLocaleTimeString();
+  const name = product.name || "商品";
+  let status = `「${name}」已保存 ${time}`;
+  if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
+    if (CMSCloud.lastSyncStatus?.ok) {
+      status += " · 已同步云端";
+    } else if (CMS.lastCloudError) {
+      status += " · 云端失败";
+    }
+  }
+  const statusEl = document.getElementById("save-status");
+  if (statusEl) statusEl.textContent = status;
+
+  if (showToast) {
+    const msg = CMS.lastCloudError
+      ? `「${name}」本地已保存，云端失败：${CMS.lastCloudError}`
+      : `商品「${name}」已保存`;
+    toast(msg);
+  }
 }
 
 function renderProductsPanel() {
@@ -599,17 +645,20 @@ function renderProductsPanel() {
   document.getElementById("btn-manage-modules").onclick = () => openModuleManagerModal();
 
   document.getElementById("btn-add-product").onclick = () => {
+    ensureProductMasterList();
     const id = `p${Date.now()}`;
-    master.push({
+    const newProduct = {
       id, name: "新茶品", tag: "", price: 0, unit: "50g",
       desc: "", detail: "", image: "longjing",
       features: [], media: "", mediaType: "placeholder", gallery: [],
       modules: []
-    });
-    syncProductMaster();
-    productPanelState.page = Math.ceil(master.length / pageSize);
+    };
+    productMasterList.push(newProduct);
+    rebuildProductsFromMaster();
+    productPanelState.page = Math.ceil(productMasterList.length / pageSize);
     renderProductsPanel();
-    openProductEditorModal(master[master.length - 1], master.length - 1);
+    const idx = productMasterList.findIndex(p => p.id === id);
+    openProductEditorModal(productMasterList[idx], idx);
   };
 
   document.getElementById("product-page-size").onchange = e => {
@@ -746,13 +795,24 @@ function openProductEditorModal(product, index) {
   const existing = document.querySelector(".admin-modal-overlay");
   if (existing) existing.remove();
 
+  ensureProductMasterList();
+  let resolvedIndex = typeof index === "number" && productMasterList[index]?.id === product.id
+    ? index
+    : productMasterList.findIndex(p => p.id === product.id);
+  if (resolvedIndex < 0) {
+    productMasterList.push(JSON.parse(JSON.stringify(product)));
+    resolvedIndex = productMasterList.length - 1;
+    rebuildProductsFromMaster();
+  }
+  const resolvedProduct = productMasterList[resolvedIndex];
+
   const overlay = document.createElement("div");
   overlay.className = "admin-modal-overlay";
   overlay.innerHTML = `
     <div class="admin-modal admin-modal--wide" role="dialog" aria-modal="true">
       <div class="admin-modal-header">
         <h3 class="admin-modal-title">编辑商品</h3>
-        <p class="admin-modal-subtitle">${escHtml(product.name)}</p>
+        <p class="admin-modal-subtitle">${escHtml(resolvedProduct.name)}</p>
         <button type="button" class="admin-modal-close" aria-label="关闭">×</button>
       </div>
       <div class="admin-modal-body" id="product-editor-body"></div>
@@ -774,20 +834,20 @@ function openProductEditorModal(product, index) {
   document.body.style.overflow = "hidden";
   document.body.appendChild(overlay);
   const body = overlay.querySelector("#product-editor-body");
-  body.appendChild(createProductEditorForm(product, index));
+  body.appendChild(createProductEditorForm(resolvedProduct, resolvedIndex));
 
   overlay.querySelector("[data-save]").onclick = async () => {
-    syncProductMaster();
-    await saveAll(true);
+    await saveCurrentProduct(resolvedProduct, true);
     close();
     renderProductsPanel();
   };
 
   overlay.querySelector("[data-del]").onclick = async () => {
-    if (!await confirmDelete(`确定删除商品「${product.name}」吗？`)) return;
-    productMasterList.splice(index, 1);
-    syncProductMaster();
-    await saveAll(true);
+    if (!await confirmDelete(`确定删除商品「${resolvedProduct.name}」吗？`)) return;
+    productMasterList.splice(resolvedIndex, 1);
+    rebuildProductsFromMaster();
+    await CMS.save(productMasterList);
+    toast(`商品「${resolvedProduct.name}」已删除`);
     close();
     renderProductsPanel();
   };
@@ -842,13 +902,14 @@ function createProductEditorForm(product, index) {
       </div>
     </div>`;
 
-  bindFields(div, product);
+  bindFields(div, product, { autoSave: false });
   const galleryList = div.querySelector(".admin-gallery-list");
   renderProductGalleryList(product, galleryList);
 
   const moduleField = div.querySelector("[data-module-field]");
   if (moduleField) {
     bindModulePicker(moduleField, product, {
+      silent: true,
       onTagAutoFill: tag => {
         const tagInput = div.querySelector('[data-f="tag"]');
         if (tagInput) tagInput.value = tag;
@@ -868,8 +929,7 @@ function createProductEditorForm(product, index) {
         const id = await CMS.uploadFile(processed);
         product.gallery.push(id);
       }
-      syncProductMaster();
-      await CMS.save(productMasterList);
+      await saveCurrentProduct(product, false);
       renderProductGalleryList(product, galleryList);
       toast("实拍图已添加");
     } catch (err) {
@@ -880,10 +940,9 @@ function createProductEditorForm(product, index) {
 
   div.querySelector('[data-f="features"]').oninput = e => {
     product.features = e.target.value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
-    scheduleAutoSave();
   };
 
-  setupMediaUpload(div.querySelector("[data-upload]"), product, "media", div.querySelector(".media-preview-wrap"), { cropSlot: "product" });
+  setupMediaUpload(div.querySelector("[data-upload]"), product, "media", div.querySelector(".media-preview-wrap"), { cropSlot: "product", autoSave: false });
   return div;
 }
 
@@ -1199,25 +1258,26 @@ function renderBackupPanel() {
     if (!file) return toast("请选择 JSON 文件");
     const text = await file.text();
     await CMS.importJSON(text);
-    productMasterList = null;
+    reloadProductMasterList();
     renderAllPanels();
     toast("导入成功");
   };
   document.getElementById("btn-reset").onclick = async () => {
     if (!await confirmDelete("确定恢复全部默认内容？当前文字配置将被覆盖。", { okText: "确认恢复" })) return;
     await CMS.reset();
-    productMasterList = null;
+    reloadProductMasterList();
     renderAllPanels();
     toast("已恢复默认");
   };
 }
 
-function bindFields(container, obj) {
+function bindFields(container, obj, options = {}) {
+  const { autoSave = true } = options;
   container.querySelectorAll("[data-f]").forEach(inp => {
     const key = inp.dataset.f;
     const handler = () => {
       obj[key] = inp.type === "number" ? +inp.value : inp.value;
-      scheduleAutoSave();
+      if (autoSave) scheduleAutoSave();
     };
     inp.addEventListener("input", handler);
     inp.addEventListener("change", handler);
@@ -1245,8 +1305,8 @@ function setupMediaUpload(input, obj, field, previewWrap, options = {}) {
       const id = await CMS.uploadFile(file);
       obj[field] = id;
       showPreview(previewWrap, id, isVideo, options.previewClass);
-      scheduleAutoSave();
-      toast("上传成功");
+      if (options.autoSave !== false) scheduleAutoSave();
+      else toast("上传成功，请点击保存");
     } catch (err) {
       if (err.message !== "cancelled") toast(err.message || "上传失败");
     }
