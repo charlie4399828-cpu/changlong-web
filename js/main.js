@@ -282,6 +282,11 @@ function initParallax() {
   const hero = document.querySelector(".hero");
   const carousel = document.querySelector(".carousel");
 
+  if (carousel) {
+    carousel.style.transform = "";
+    carousel.style.opacity = "";
+  }
+
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   let ticking = false;
