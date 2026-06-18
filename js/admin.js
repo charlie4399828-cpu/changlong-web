@@ -300,6 +300,7 @@ async function maybeAutoSyncLocalToCloud() {
 document.addEventListener("DOMContentLoaded", async () => {
   await CMS.init();
   reloadProductMasterList();
+  await applyAdminSiteBranding();
   await maybeAutoSyncLocalToCloud();
   bindNav();
   renderAllPanels();
@@ -330,6 +331,22 @@ function scheduleAutoSave() {
   clearTimeout(autoSaveTimer);
   document.getElementById("save-status").textContent = "编辑中…";
   autoSaveTimer = setTimeout(() => saveAll(false, { syncCloud: false }), 800);
+}
+
+async function applyAdminSiteBranding() {
+  const site = CMS?.data?.site;
+  if (!site) return;
+
+  if (typeof renderSiteMeta === "function") {
+    await renderSiteMeta(site, { skipTitle: true });
+  } else if (site.logo) {
+    const logoUrl = await CMS.resolveMediaUrl(site.logo);
+    const src = logoUrl || site.logo;
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon && src) favicon.href = src;
+  }
+
+  document.title = `内容管理 - ${site.name || "昌隆茶舍"}`;
 }
 
 function bindInput(id, fn) {
@@ -855,9 +872,6 @@ function openProductEditorModal(product, index) {
     document.body.style.overflow = "";
   };
   overlay.querySelector(".admin-modal-close").onclick = close;
-  overlay.addEventListener("click", e => {
-    if (e.target === overlay) close();
-  });
 
   document.body.style.overflow = "hidden";
   document.body.appendChild(overlay);
@@ -1149,14 +1163,20 @@ function renderSitePanel() {
 
   if (!s.publicUrl) s.publicUrl = window.SITE_CONFIG?.publicUrl || "https://charlie4399828-cpu.github.io/changlong-web/";
 
-  bindInput("site-name", el => { s.name = el.value; });
+  bindInput("site-name", el => {
+    s.name = el.value;
+    document.title = `内容管理 - ${el.value || "昌隆茶舍"}`;
+  });
   bindInput("site-footer", el => { s.footerText = el.value; });
   bindInput("site-copy", el => { s.copyright = el.value; });
   bindInput("site-public-url", el => {
     s.publicUrl = el.value.trim();
     if (typeof refreshSiteQrCodes === "function") refreshSiteQrCodes();
   });
-  setupMediaUpload(document.getElementById("site-logo-up"), s, "logo", document.getElementById("site-logo-prev"), { cropSlot: "logo" });
+  setupMediaUpload(document.getElementById("site-logo-up"), s, "logo", document.getElementById("site-logo-prev"), {
+    cropSlot: "logo",
+    onUploaded: applyAdminSiteBranding
+  });
   setupMediaUpload(document.getElementById("site-flogo-up"), s, "footerLogo", document.getElementById("site-flogo-prev"), { cropSlot: "logo" });
   if (typeof initSiteQrCodes === "function") initSiteQrCodes();
 }
@@ -1335,6 +1355,7 @@ function setupMediaUpload(input, obj, field, previewWrap, options = {}) {
       showPreview(previewWrap, id, isVideo, options.previewClass);
       if (options.autoSave !== false) scheduleAutoSave();
       else toast("上传成功，请点击保存");
+      if (options.onUploaded) await options.onUploaded(id);
     } catch (err) {
       if (err.message !== "cancelled") toast(err.message || "上传失败");
     }
