@@ -252,15 +252,15 @@ function esc(str) {
 }
 
 async function renderProductMedia(product, className = "") {
-  if (product.media && (product.mediaType === "image" || product.mediaType === "video")) {
+  if (product.media) {
     const url = await CMS.resolveMediaUrl(product.media);
-    if (!url) {
-      return `<div class="tea-visual ${className}" data-tea="${product.image || ""}">${product.name.slice(0, 2)}</div>`;
+    if (url) {
+      const isVideo = product.mediaType === "video" || /\.(mp4|webm)(\?|$)/i.test(url);
+      if (isVideo) {
+        return `<video class="${className}" src="${url}" autoplay muted loop playsinline></video>`;
+      }
+      return `<img class="${className}" src="${url}" alt="${esc(product.name)}" loading="lazy" decoding="async">`;
     }
-    if (product.mediaType === "video") {
-      return `<video class="${className}" src="${url}" autoplay muted loop playsinline></video>`;
-    }
-    return `<img class="${className}" src="${url}" alt="${esc(product.name)}">`;
   }
   return `<div class="tea-visual ${className}" data-tea="${product.image || ""}">${product.name.slice(0, 2)}</div>`;
 }

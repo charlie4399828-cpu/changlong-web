@@ -241,10 +241,11 @@ const CMSCloud = {
     if (!refs.size) return false;
 
     const urlMap = new Map();
-    for (const ref of refs) {
+    await Promise.all([...refs].map(async ref => {
+      if (!ref.startsWith("media_")) return;
       const url = await this.resolveStorageUrl(ref);
       if (url) urlMap.set(ref, url);
-    }
+    }));
     if (!urlMap.size) return false;
 
     this.replaceMediaRefs(data, urlMap);
@@ -297,8 +298,8 @@ const CMSCloud = {
     if (!refs.size) return copy;
 
     const urlMap = new Map();
-    for (const ref of refs) {
-      if (!ref.startsWith("media_")) continue;
+    await Promise.all([...refs].map(async ref => {
+      if (!ref.startsWith("media_")) return;
       const record = await getMediaRecord(ref);
       if (record?.blob) {
         try {
@@ -309,14 +310,14 @@ const CMSCloud = {
             record.name
           );
           urlMap.set(ref, url);
-          continue;
+          return;
         } catch (err) {
           console.warn("上传媒体到云端失败:", ref, err);
         }
       }
       const existing = await this.resolveStorageUrl(ref);
       if (existing) urlMap.set(ref, existing);
-    }
+    }));
 
     this.replaceMediaRefs(copy, urlMap);
     return copy;

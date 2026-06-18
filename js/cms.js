@@ -247,7 +247,8 @@ const CMS = {
     }
   },
 
-  async save(masterProductList) {
+  async save(masterProductList, options = {}) {
+    const { syncCloud = true } = options;
     if (Array.isArray(masterProductList)) {
       this.rebuildProductCategories(masterProductList);
     }
@@ -256,16 +257,18 @@ const CMS = {
     localStorage.setItem("changlong_cms_version", String(Date.now()));
     this.syncProductsGlobal();
 
-    if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
-      try {
-        await CMSCloud.hydrateAllMediaRefs(this.data);
-        persistSiteData(this.data);
-        await CMSCloud.syncToCloud(this.data);
-        this.lastCloudError = "";
-      } catch (err) {
-        console.warn("云端同步失败（本地已保存）:", err.message || err);
-        this.lastCloudError = err.message || String(err);
-      }
+    if (!syncCloud || typeof CMSCloud === "undefined" || !CMSCloud.isEnabled()) {
+      return;
+    }
+
+    try {
+      await CMSCloud.hydrateAllMediaRefs(this.data);
+      persistSiteData(this.data);
+      await CMSCloud.syncToCloud(this.data);
+      this.lastCloudError = "";
+    } catch (err) {
+      console.warn("云端同步失败（本地已保存）:", err.message || err);
+      this.lastCloudError = err.message || String(err);
     }
   },
 

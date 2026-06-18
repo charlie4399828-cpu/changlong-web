@@ -21,10 +21,13 @@ async function createProductCard(product, index) {
         <p class="product-desc">${product.desc}</p>
         <div class="product-footer">
           <span class="product-price">¥${product.price}<span>/${product.unit}</span></span>
-          <span class="product-arrow">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
+          <span class="product-action">
+            <span class="product-view-detail">查看详情</span>
+            <span class="product-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </span>
           </span>
         </div>
       </div>

@@ -281,7 +281,7 @@ async function maybeAutoSyncLocalToCloud() {
   if (statusEl) statusEl.textContent = "正在将本机数据同步到云端…";
 
   try {
-    await CMS.save(productMasterList);
+    await CMS.save(productMasterList, { syncCloud: true });
     if (CMSCloud.lastSyncStatus?.ok) {
       toast("本机数据已自动同步到云端，其他浏览器现在可以访问");
       if (statusEl) {
@@ -303,21 +303,33 @@ document.addEventListener("DOMContentLoaded", async () => {
   await maybeAutoSyncLocalToCloud();
   bindNav();
   renderAllPanels();
-  document.getElementById("btn-save-all").addEventListener("click", () => saveAll(true));
+  document.getElementById("btn-save-all").addEventListener("click", async () => {
+    const btn = document.getElementById("btn-save-all");
+    btn.disabled = true;
+    btn.textContent = "保存中…";
+    try {
+      await saveAll(true, { syncCloud: true });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "保存全部";
+    }
+  });
   document.getElementById("btn-preview").addEventListener("click", async e => {
     e.preventDefault();
-    await saveAll(false);
+    const link = e.currentTarget;
+    link.style.pointerEvents = "none";
+    await saveAll(false, { syncCloud: false });
     window.location.href = "index.html";
   });
   window.addEventListener("beforeunload", () => {
-    if (autoSaveTimer) CMS.save(productMasterList);
+    if (autoSaveTimer) CMS.save(productMasterList, { syncCloud: false });
   });
 });
 
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimer);
   document.getElementById("save-status").textContent = "编辑中…";
-  autoSaveTimer = setTimeout(() => saveAll(false), 600);
+  autoSaveTimer = setTimeout(() => saveAll(false, { syncCloud: false }), 800);
 }
 
 function bindInput(id, fn) {
@@ -574,7 +586,7 @@ async function saveCurrentProduct(product, showToast = true) {
 
   clearTimeout(autoSaveTimer);
   rebuildProductsFromMaster();
-  await CMS.save(productMasterList);
+  await CMS.save(productMasterList, { syncCloud: false });
 
   const time = new Date().toLocaleTimeString();
   const name = product.name || "商品";
@@ -784,13 +796,15 @@ async function renderProductTableRows(pageItems, globalStart, total) {
 }
 
 async function buildProductThumbHTML(product) {
-  if (product.mediaType === "image" && product.media) {
+  if (product.media) {
     const url = await CMS.getMediaUrl(product.media);
-    if (url) return `<img class="admin-product-thumb" src="${url}" alt="">`;
-  }
-  if (product.mediaType === "video" && product.media) {
-    const url = await CMS.getMediaUrl(product.media);
-    if (url) return `<video class="admin-product-thumb" src="${url}" muted playsinline></video>`;
+    if (url) {
+      const isVideo = product.mediaType === "video" || /\.(mp4|webm)(\?|$)/i.test(url);
+      if (isVideo) {
+        return `<video class="admin-product-thumb" src="${url}" muted playsinline></video>`;
+      }
+      return `<img class="admin-product-thumb" src="${url}" alt="">`;
+    }
   }
   const label = (product.name || "茶").slice(0, 2);
   return `<div class="admin-product-thumb admin-product-thumb--placeholder" data-tea="${escAttr(product.image || "longjing")}">${escHtml(label)}</div>`;
@@ -860,7 +874,7 @@ function openProductEditorModal(product, index) {
     if (!await confirmDelete(`确定删除商品「${resolvedProduct.name}」吗？`)) return;
     productMasterList.splice(resolvedIndex, 1);
     rebuildProductsFromMaster();
-    await CMS.save(productMasterList);
+    await CMS.save(productMasterList, { syncCloud: false });
     toast(`商品「${resolvedProduct.name}」已删除`);
     close();
     renderProductsPanel();
@@ -900,7 +914,7 @@ function createProductEditorForm(product, index) {
         </select>
       </div>
       <div class="admin-field">
-        <label>上传图片/视频</label>
+        <label>上传主图</label>
         <div class="admin-upload">
           <input type="file" accept="image/*,video/*" data-upload="media">
           <div class="media-preview-wrap"></div>
@@ -1218,7 +1232,7 @@ function renderBackupPanel() {
     CMSCloud.setStoredPassword(pwdInput?.value.trim() || "");
     statusEl.textContent = "同步中，正在上传媒体…";
     try {
-      await CMS.save(productMasterList);
+      await CMS.save(productMasterList, { syncCloud: true });
       const st = CMSCloud.lastSyncStatus;
       statusEl.textContent = st?.ok
         ? `云端同步成功 ${new Date().toLocaleTimeString()}`
@@ -1345,23 +1359,30 @@ async function showPreview(wrap, ref, forceVideo, previewClass = "") {
   wrap.innerHTML = `<img class="admin-upload-preview${extraClass}" src="${url}" alt="预览">`;
 }
 
-async function saveAll(showToast = true) {
+async function saveAll(showToast = true, options = {}) {
+  const { syncCloud = false } = options;
   clearTimeout(autoSaveTimer);
-  await CMS.save(productMasterList);
+  const statusEl = document.getElementById("save-status");
+  if (syncCloud) statusEl.textContent = "保存并同步云端…";
+
+  await CMS.save(productMasterList, { syncCloud });
+
   const time = new Date().toLocaleTimeString();
-  let status = `已保存 ${time}`;
-  if (typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
+  let status = syncCloud ? `已保存 ${time}` : `本地已保存 ${time}`;
+  if (syncCloud && typeof CMSCloud !== "undefined" && CMSCloud.isEnabled()) {
     if (CMSCloud.lastSyncStatus?.ok) {
       status += " · 已同步云端";
     } else if (CMS.lastCloudError) {
       status += " · 云端失败";
     }
   }
-  document.getElementById("save-status").textContent = status;
+  statusEl.textContent = status;
   if (showToast) {
-    const msg = CMS.lastCloudError
+    const msg = syncCloud && CMS.lastCloudError
       ? "本地已保存，但云端同步失败：" + CMS.lastCloudError
-      : "全部内容已保存，请刷新首页查看";
+      : syncCloud
+        ? "全部内容已保存并同步云端，请刷新首页查看"
+        : "已保存到本机，点「保存全部」可同步云端";
     toast(msg);
   }
 }

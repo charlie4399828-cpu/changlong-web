@@ -1138,14 +1138,14 @@ ul { list-style: none; }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-md);
 }
 
 .product-card {
   position: relative;
   background: linear-gradient(160deg, var(--color-white) 0%, var(--color-rice) 100%);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid rgba(232, 228, 220, 0.8);
   transition:
@@ -1190,22 +1190,25 @@ ul { list-style: none; }
 
 .product-card-image {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--color-rice);
 }
 
 .product-card-image img,
+.product-card-image video,
 .product-card-image .tea-visual {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: transform var(--duration-slow) var(--ease-out-expo);
 }
 
 .product-card:hover .product-card-image img,
+.product-card:hover .product-card-image video,
 .product-card:hover .product-card-image .tea-visual {
-  transform: scale(1.06);
+  transform: scale(1.04);
 }
 
 .product-tag {
@@ -1223,62 +1226,84 @@ ul { list-style: none; }
 }
 
 .product-card-body {
-  padding: var(--space-md);
+  padding: 12px 14px 14px;
 }
 
 .product-name {
   font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 400;
   color: var(--color-ink-deep);
-  letter-spacing: 0.08em;
-  margin-bottom: var(--space-xs);
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
 }
 
 .product-desc {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--color-mist);
-  margin-bottom: var(--space-sm);
+  margin-bottom: 10px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 1.45;
 }
 
 .product-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-xs);
 }
 
 .product-price {
   font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--color-celadon-deep);
 }
 
 .product-price span {
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  margin-left: 3px;
+}
+
+.product-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.product-view-detail {
   font-size: 0.75rem;
   color: var(--color-mist);
-  margin-left: 4px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: color var(--duration-fast);
+}
+
+.product-card:hover .product-view-detail {
+  color: var(--color-celadon-deep);
 }
 
 .product-arrow {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--color-ink-light);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--duration-fast) var(--ease-out-expo);
+  flex-shrink: 0;
 }
 
 .product-card:hover .product-arrow {
   background: var(--color-celadon-deep);
   border-color: var(--color-celadon-deep);
   color: var(--color-white);
-  transform: translateX(4px);
+  transform: translateX(2px);
 }
 
 /* 茶叶视觉占位 */
