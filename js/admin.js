@@ -549,7 +549,21 @@ function syncProductMaster() {
   scheduleAutoSave();
 }
 
+function flushProductEditorForm(product) {
+  const body = document.getElementById("product-editor-body");
+  if (!body) return;
+  body.querySelectorAll("[data-f]").forEach(inp => {
+    const key = inp.dataset.f;
+    product[key] = inp.type === "number" ? +inp.value : inp.value;
+  });
+  const featuresInp = body.querySelector('[data-f="features"]');
+  if (featuresInp) {
+    product.features = featuresInp.value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  }
+}
+
 async function saveCurrentProduct(product, showToast = true) {
+  flushProductEditorForm(product);
   ensureProductMasterList();
   const idx = productMasterList.findIndex(p => p.id === product.id);
   if (idx < 0) {

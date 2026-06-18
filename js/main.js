@@ -65,16 +65,11 @@ const REVEAL_SELECTOR = [
 let revealObserver = null;
 
 function initHeader() {
-  const header = document.querySelector(".header");
-  if (!header) return;
+  initPageHeader({ trackNav: true });
+}
 
-  const onScroll = () => {
-    header.classList.toggle("scrolled", window.scrollY > 50);
-    updateActiveNav();
-  };
-
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
+function initMobileNav() {
+  initPageMobileNav();
 }
 
 function getCurrentSection() {
@@ -287,6 +282,8 @@ function initParallax() {
   const hero = document.querySelector(".hero");
   const carousel = document.querySelector(".carousel");
 
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
   let ticking = false;
   const onScroll = () => {
     if (ticking) return;
@@ -313,32 +310,6 @@ function initParallax() {
 
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
-}
-
-function initMobileNav() {
-  const toggle = document.querySelector(".menu-toggle");
-  const nav = document.querySelector(".nav");
-  if (!toggle || !nav) return;
-
-  toggle.addEventListener("click", () => {
-    toggle.classList.toggle("active");
-    nav.classList.toggle("open");
-    document.body.style.overflow = nav.classList.contains("open") ? "hidden" : "";
-  });
-
-  nav.querySelectorAll(".nav-link").forEach(link => {
-    link.addEventListener("click", () => {
-      toggle.classList.remove("active");
-      nav.classList.remove("open");
-      document.body.style.overflow = "";
-    });
-  });
-}
-
-function escProductText(str) {
-  const d = document.createElement("div");
-  d.textContent = str || "";
-  return d.innerHTML;
 }
 
 const HOME_PRODUCT_LIMIT = 8;
@@ -379,48 +350,10 @@ async function initProductCards() {
     const visible = products.slice(0, HOME_PRODUCT_LIMIT);
     const cards = await Promise.all(visible.map((p, i) => createProductCard(p, i)));
     container.innerHTML = cards.join("");
-
-    container.querySelectorAll(".product-card").forEach(card => {
-      card.addEventListener("click", () => navigateToProduct(card.dataset.id));
-    });
+    bindProductCardClicks(container);
   }
 
   observeRevealElements();
-}
-
-async function createProductCard(product, index) {
-  const delay = Math.min((index % 4) + 1, 4);
-  const mediaHtml = typeof renderProductMedia === "function"
-    ? await renderProductMedia(product)
-    : `<div class="tea-visual" data-tea="${product.image}">${product.name.slice(0, 2)}</div>`;
-  return `
-    <article class="product-card reveal-scale delay-${delay}" data-id="${product.id}">
-      <div class="product-card-shine"></div>
-      <div class="product-card-image">
-        ${mediaHtml}
-        <span class="product-tag">${product.tag}</span>
-      </div>
-      <div class="product-card-body">
-        <h4 class="product-name">${product.name}</h4>
-        <p class="product-desc">${product.desc}</p>
-        <div class="product-footer">
-          <span class="product-price">¥${product.price}<span>/${product.unit}</span></span>
-          <span class="product-arrow">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </span>
-        </div>
-      </div>
-    </article>
-  `;
-}
-
-function navigateToProduct(id) {
-  document.body.classList.add("page-exit");
-  setTimeout(() => {
-    window.location.href = `product.html?id=${id}`;
-  }, 400);
 }
 
 function initSmoothScroll() {

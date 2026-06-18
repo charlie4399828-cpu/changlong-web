@@ -249,7 +249,7 @@ ul { list-style: none; }
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  z-index: 9999;
+  z-index: var(--z-side-nav);
   pointer-events: none;
   margin: 0;
   padding: 0;
@@ -495,7 +495,7 @@ ul { list-style: none; }
 /* ========== 轮播图 ========== */
 .hero {
   position: relative;
-  height: 100vh;
+  min-height: 100dvh;
   min-height: 500px;
   max-height: 900px;
   margin-top: var(--header-height);
@@ -778,18 +778,7 @@ ul { list-style: none; }
 }
 
 .scroll-hint {
-  position: absolute;
-  bottom: var(--space-xl);
-  right: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-  color: var(--color-mist);
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  z-index: 10;
-  animation: shimmer 3s ease-in-out infinite;
+  display: none;
 }
 
 .scroll-hint-line {

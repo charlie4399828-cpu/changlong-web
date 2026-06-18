@@ -7,5 +7,5 @@ node_modules
 Thumbs.db
 *.log
 supabase/.temp/
-
-.vercel
+scripts/current-site-data.json
+taste-skill-main/

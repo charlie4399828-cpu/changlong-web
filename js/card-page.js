@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  document.title = `${card.name} — 电子名片`;
+  document.title = `${card.name} - 电子名片`;
   root.innerHTML = await buildBusinessCardHTML(card, { page: true });
 
   const phoneEl = root.querySelector(".card-info-item[data-type='phone'] .card-info-text");

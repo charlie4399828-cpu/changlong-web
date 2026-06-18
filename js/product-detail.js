@@ -25,14 +25,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     await renderSiteMeta(CMS.data.site, { skipTitle: true });
   }
 
-  initHeader();
-  initMobileNav();
+  initPageHeader();
+  initPageMobileNav();
   initTapEffect();
 });
 
 async function renderProduct(product) {
   const siteName = CMS?.data?.site?.name || "昌隆茶业";
-  document.title = `${product.name} — ${siteName}`;
+  document.title = `${product.name} - ${siteName}`;
 
   const container = document.getElementById("product-detail");
   if (!container) return;
@@ -281,7 +281,7 @@ function openPhotoLightbox(src, alt) {
 }
 
 function renderNotFound() {
-  document.title = "商品未找到 — 昌隆茶业";
+  document.title = "商品未找到 - 昌隆茶业";
   const container = document.getElementById("product-detail");
   if (!container) return;
 
@@ -292,26 +292,6 @@ function renderNotFound() {
       <a href="index.html#products" class="btn btn-primary">返回商品列表</a>
     </div>
   `;
-}
-
-function initHeader() {
-  const header = document.querySelector(".header");
-  if (!header) return;
-  window.addEventListener("scroll", () => {
-    header.classList.toggle("scrolled", window.scrollY > 50);
-  }, { passive: true });
-}
-
-function initMobileNav() {
-  const toggle = document.querySelector(".menu-toggle");
-  const nav = document.querySelector(".nav");
-  if (!toggle || !nav) return;
-
-  toggle.addEventListener("click", () => {
-    toggle.classList.toggle("active");
-    nav.classList.toggle("open");
-    document.body.style.overflow = nav.classList.contains("open") ? "hidden" : "";
-  });
 }
 
 const REVEAL_SELECTOR = [

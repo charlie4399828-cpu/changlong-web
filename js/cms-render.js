@@ -17,7 +17,7 @@ async function renderSiteMeta(site, options = {}) {
 
   document.querySelectorAll(".logo-text").forEach(el => { el.textContent = site.name; });
   if (!options.skipTitle) {
-    document.title = `${site.name} — 宋韵茶香`;
+    document.title = `${site.name} - 宋韵茶香`;
   }
 
   const footerTexts = document.querySelectorAll(".footer .footer-text");
@@ -79,10 +79,6 @@ async function renderCarousel(carousel) {
     </button>
     <div class="carousel-controls">
       <div class="carousel-dots">${dotsHTML}</div>
-    </div>
-    <div class="scroll-hint">
-      <span>向下滚动</span>
-      <div class="scroll-hint-line"></div>
     </div>`;
 
   if (typeof refreshSpotlight === "function") refreshSpotlight();
@@ -108,7 +104,7 @@ async function buildMediaBg(item) {
 }
 
 async function renderAbout(about) {
-  setText(".about .spotlight-band .section-tag", about.tag);
+  hideSectionTag(".about .spotlight-band .section-tag");
   setText(".about .spotlight-band .section-title", about.title);
   setText(".about .spotlight-band .section-desc", about.desc);
   setText(".about-content h3", about.shopTitle);
@@ -163,7 +159,7 @@ async function renderAbout(about) {
 
 function renderProductsSection(sec) {
   if (!sec) return;
-  setText(".products .spotlight-band .section-tag", sec.tag);
+  hideSectionTag(".products .spotlight-band .section-tag");
   setText(".products .spotlight-band .section-title", sec.title);
   setText(".products .spotlight-band .section-desc", sec.desc);
 }
@@ -172,9 +168,9 @@ async function renderContact(contact) {
   const section = document.querySelector(".contact");
   if (!section || !contact) return;
 
-  setText(".contact .section-tag", contact.tag);
   setText(".contact .section-title", contact.title);
   setText(".contact .section-desc", contact.desc);
+  hideSectionTag(".contact .section-tag");
 
   const container = section.querySelector("#contact-cards");
   if (!container) return;
@@ -240,6 +236,13 @@ async function buildBusinessCardHTML(card, options = {}) {
 function setText(selector, text) {
   const el = document.querySelector(selector);
   if (el && text !== undefined) el.textContent = text;
+}
+
+function hideSectionTag(selector) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  el.textContent = "";
+  el.hidden = true;
 }
 
 function esc(str) {

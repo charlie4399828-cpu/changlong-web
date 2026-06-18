@@ -44,6 +44,12 @@
   --header-height: 72px;
   --max-width: 1200px;
   --max-width-wide: 1400px;
+
+  /* 层级（避免随意 z-9999） */
+  --z-header: 90;
+  --z-side-nav: 100;
+  --z-overlay: 1000;
+  --z-modal: 10001;
 }
 
 @media (max-width: 768px) {

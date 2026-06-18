@@ -1,4 +1,4 @@
-/* 手机端布局补丁 — 数据方块三列 + 商品双列 */
+/* 手机端布局补丁 - 数据方块三列 + 商品双列 */
 @media (max-width: 768px) {
   .about-features {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
