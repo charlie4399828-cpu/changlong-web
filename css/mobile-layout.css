@@ -1,5 +1,42 @@
-/* 手机端布局补丁 - 数据方块三列 + 商品双列 */
+/* 手机端布局补丁 - 数据方块三列 + 商品双列 + 轮播适配 */
+@media (max-width: 1024px) {
+  .hero {
+    height: clamp(280px, 42vh, 480px) !important;
+    max-height: 480px !important;
+  }
+
+  .slide-bg {
+    transform: none !important;
+  }
+
+  .carousel-slide.active .slide-bg {
+    transform: none !important;
+  }
+
+  .carousel-slide--media .slide-bg .slide-media,
+  .carousel-slide--media .slide-bg video.slide-media {
+    object-fit: contain !important;
+    object-position: center !important;
+  }
+}
+
 @media (max-width: 768px) {
+  .hero {
+    height: clamp(220px, 56vw, 380px) !important;
+    min-height: 220px !important;
+    max-height: 380px !important;
+  }
+
+  .slide-title {
+    font-size: clamp(1.45rem, 6.5vw, 2.1rem) !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .slide-desc {
+    font-size: 0.88rem !important;
+    line-height: 1.75 !important;
+  }
+
   .about-features {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 8px !important;

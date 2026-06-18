@@ -2217,6 +2217,26 @@ ul { list-style: none; }
   .product-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
+
+  /* 平板：轮播不占满整屏，图片完整展示 */
+  .hero {
+    height: clamp(280px, 42vh, 480px);
+    max-height: 480px;
+  }
+
+  .slide-bg {
+    transform: none;
+  }
+
+  .carousel-slide.active .slide-bg {
+    transform: none;
+  }
+
+  .carousel-slide--media .slide-bg .slide-media,
+  .carousel-slide--media .slide-bg video.slide-media {
+    object-fit: contain;
+    object-position: center;
+  }
 }
 
 @media (max-width: 768px) {
@@ -2261,9 +2281,44 @@ ul { list-style: none; }
   }
 
   .hero {
-    height: calc(100dvh - var(--header-height));
-    min-height: 420px;
-    max-height: none;
+    height: clamp(220px, 56vw, 380px);
+    min-height: 220px;
+    max-height: 380px;
+  }
+
+  .carousel-slide--media .slide-bg {
+    background: var(--color-paper);
+  }
+
+  .carousel-slide--media .slide-bg .slide-media,
+  .carousel-slide--media .slide-bg video.slide-media {
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .slide-content {
+    padding: var(--space-md) var(--space-sm) var(--space-lg);
+  }
+
+  .slide-title {
+    font-size: clamp(1.45rem, 6.5vw, 2.1rem);
+    letter-spacing: 0.12em;
+    margin-bottom: var(--space-sm);
+  }
+
+  .slide-subtitle {
+    font-size: 0.75rem;
+    letter-spacing: 0.28em;
+  }
+
+  .slide-desc {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    padding: 0 var(--space-xs);
+  }
+
+  .carousel-controls {
+    bottom: var(--space-sm);
   }
 
   .carousel-arrow {

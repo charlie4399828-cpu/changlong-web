@@ -289,6 +289,8 @@ function initParallax() {
 
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+  const disableCarouselParallax = window.matchMedia("(max-width: 1024px)").matches;
+
   let ticking = false;
   const onScroll = () => {
     if (ticking) return;
@@ -303,10 +305,13 @@ function initParallax() {
         el.style.transform = `translate3d(0, ${offset}px, 0)`;
       });
 
-      if (hero && carousel) {
+      if (hero && carousel && !disableCarouselParallax) {
         const progress = Math.min(scrollY / hero.offsetHeight, 1);
         carousel.style.transform = `translate3d(0, ${scrollY * 0.2}px, 0)`;
         carousel.style.opacity = String(Math.max(1 - progress * 1.1, 0));
+      } else if (carousel) {
+        carousel.style.transform = "";
+        carousel.style.opacity = "";
       }
 
       ticking = false;
