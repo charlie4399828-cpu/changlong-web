@@ -4,16 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>内容管理 - 昌隆茶舍</title>
-  <link rel="stylesheet" href="css/admin.css?v=2026061509">
+  <link rel="stylesheet" href="css/admin.css?v=2026061510">
   <link rel="icon" href="assets/logo-icon.svg" type="image/svg+xml">
 </head>
 <body>
-  <div class="admin-gate" id="admin-gate" hidden>
+  <div class="admin-gate" id="admin-gate">
     <form class="admin-gate-card" id="admin-gate-form">
       <h1 class="admin-gate-title">昌隆 · 内容管理</h1>
       <p class="admin-gate-desc">请输入访问密码进入后台</p>
       <label class="admin-gate-label" for="admin-gate-password">访问密码</label>
-      <input class="admin-gate-input" type="password" id="admin-gate-password" autocomplete="current-password" required>
+      <div class="admin-gate-password-wrap">
+        <input class="admin-gate-input" type="password" id="admin-gate-password" autocomplete="current-password" required>
+        <button type="button" class="admin-gate-toggle-pw" id="admin-gate-toggle-pw" aria-label="显示密码" aria-pressed="false">
+          <svg class="admin-gate-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path class="admin-gate-eye-open" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle class="admin-gate-eye-open" cx="12" cy="12" r="3"/>
+            <path class="admin-gate-eye-closed" d="M3 3l18 18M10.5 10.7A3 3 0 0012 15a3 3 0 002.5-1.3M6.2 6.2C4.2 7.8 2.6 10 2 12c0 0 4 7 10 7 1.6 0 3.1-.4 4.4-1"/>
+          </svg>
+        </button>
+      </div>
       <p class="admin-gate-error" id="admin-gate-error" hidden>密码错误，请重试</p>
       <button type="submit" class="admin-btn admin-btn-primary admin-gate-submit">进入后台</button>
       <a href="index.html" class="admin-gate-back">返回首页</a>
@@ -67,7 +75,7 @@
   <script src="js/image-crop.js?v=2026061509"></script>
   <script src="js/site-qr.js?v=2026061301"></script>
   <script src="js/admin-gallery.js?v=2026061509"></script>
-  <script src="js/admin-auth.js?v=2026061509"></script>
-  <script src="js/admin.js?v=2026061509"></script>
+  <script src="js/admin-auth.js?v=2026061510"></script>
+  <script src="js/admin.js?v=2026061510"></script>
 </body>
 </html>

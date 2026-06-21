@@ -2,7 +2,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   await CMS.init();
 
   const site = CMS.data?.site;
-  if (site?.name) {
+  if (typeof renderSiteMeta === "function" && site) {
+    await renderSiteMeta(site, { skipTitle: true });
+  } else if (site?.name) {
     document.querySelectorAll(".logo-text").forEach(el => { el.textContent = site.name; });
   }
 

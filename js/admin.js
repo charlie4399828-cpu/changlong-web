@@ -300,13 +300,21 @@ async function maybeAutoSyncLocalToCloud() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   await CMS.init();
+  await applyAdminSiteBranding();
 
   if (!isAdminUnlocked()) {
     showAdminGate(startAdminApp);
     return;
   }
 
-  await startAdminApp();
+  try {
+    await startAdminApp();
+  } catch (err) {
+    console.error(err);
+    clearAdminUnlock();
+    toast("进入后台失败，请重新登录", { variant: "error" });
+    showAdminGate(startAdminApp);
+  }
 });
 
 function scheduleAutoSave() {
@@ -994,6 +1002,10 @@ function renderContactPanel() {
   if (!c.cards) CMS.normalizeContact();
   const el = document.getElementById("panel-contact");
   el.innerHTML = `
+    <div class="admin-card admin-card--note">
+      <div class="admin-card-title">电子名片「我的故事」</div>
+      <p class="admin-hint admin-hint--flush">在下方各联系人卡片中展开「我的故事」，填写标题、正文与配图后点「保存全部」。内容会显示在名片页二维码下方；未填写则不显示。</p>
+    </div>
     <div class="admin-card">
       <div class="admin-row">
         <div class="admin-field"><label>英文标签</label><input id="ct-tag" value="${escAttr(c.tag)}"></div>
@@ -1403,11 +1415,18 @@ async function saveAll(showToast = true, options = {}) {
   }
 }
 
-function toast(msg) {
+function toast(msg, options = {}) {
   const t = document.getElementById("toast");
+  if (!t) return;
   t.textContent = msg;
+  t.classList.remove("admin-toast--error");
+  if (options.variant === "error") t.classList.add("admin-toast--error");
   t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2500);
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    t.classList.remove("show");
+    t.classList.remove("admin-toast--error");
+  }, options.duration || 2800);
 }
 
 function escAttr(s) {
