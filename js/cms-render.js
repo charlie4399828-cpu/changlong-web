@@ -202,7 +202,7 @@ async function buildBusinessCardHTML(card, options = {}) {
   const qrUrl = await CMS.getMediaUrl(card.qr) || "assets/qr-code.svg";
   const pageClass = options.page ? " business-card--page" : "";
   const storyHtml = options.page && typeof buildCardStoryHTML === "function"
-    ? await buildCardStoryHTML(card)
+    ? await buildCardStoryHTML(card, { alwaysShow: true })
     : "";
 
   return `

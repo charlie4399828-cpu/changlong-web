@@ -21,17 +21,43 @@ function clearAdminUnlock() {
   sessionStorage.removeItem(ADMIN_UNLOCK_KEY);
 }
 
+function setPasswordFieldVisible(input, visible) {
+  if (!input) return;
+  input.type = visible ? "text" : "password";
+  input.setAttribute("autocomplete", visible ? "off" : "current-password");
+}
+
 function bindPasswordToggle(input, button) {
-  if (!input || !button || button.dataset.bound) return;
+  if (!input || !button) return;
+  if (button.dataset.bound) return;
   button.dataset.bound = "1";
-  button.addEventListener("click", () => {
-    const show = input.type === "password";
-    input.type = show ? "text" : "password";
-    button.setAttribute("aria-pressed", show ? "true" : "false");
-    button.setAttribute("aria-label", show ? "隐藏密码" : "显示密码");
-    button.classList.toggle("is-visible", show);
+
+  button.addEventListener("mousedown", e => e.preventDefault());
+
+  button.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const visible = input.type === "password";
+    setPasswordFieldVisible(input, visible);
+    button.setAttribute("aria-pressed", visible ? "true" : "false");
+    button.setAttribute("aria-label", visible ? "隐藏密码" : "显示密码");
+    button.classList.toggle("is-visible", visible);
+    input.focus({ preventScroll: true });
+    const end = input.value.length;
+    if (typeof input.setSelectionRange === "function") {
+      input.setSelectionRange(end, end);
+    }
   });
 }
+
+function initAdminGatePasswordToggle() {
+  bindPasswordToggle(
+    document.getElementById("admin-gate-password"),
+    document.getElementById("admin-gate-toggle-pw")
+  );
+}
+
+document.addEventListener("DOMContentLoaded", initAdminGatePasswordToggle);
 
 function showAdminGate(onSuccess) {
   const gate = document.getElementById("admin-gate");
@@ -51,14 +77,14 @@ function showAdminGate(onSuccess) {
   app.hidden = true;
   if (input) {
     input.value = "";
-    input.type = "password";
+    setPasswordFieldVisible(input, false);
     setTimeout(() => input.focus(), 50);
   }
   if (toggle) {
     toggle.classList.remove("is-visible");
     toggle.setAttribute("aria-pressed", "false");
     toggle.setAttribute("aria-label", "显示密码");
-    bindPasswordToggle(input, toggle);
+    initAdminGatePasswordToggle();
   }
   if (err) err.hidden = true;
   if (submitBtn) submitBtn.disabled = false;

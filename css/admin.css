@@ -1016,6 +1016,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .admin-gate-toggle-pw:hover,
@@ -1035,11 +1037,11 @@ body {
 }
 
 .admin-gate-toggle-pw.is-visible .admin-gate-eye-open {
-  display: none;
+  display: none !important;
 }
 
 .admin-gate-toggle-pw.is-visible .admin-gate-eye-closed {
-  display: block;
+  display: inline !important;
 }
 
 .admin-gate-input:focus {

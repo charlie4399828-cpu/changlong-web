@@ -1004,7 +1004,7 @@ function renderContactPanel() {
   el.innerHTML = `
     <div class="admin-card admin-card--note">
       <div class="admin-card-title">电子名片「我的故事」</div>
-      <p class="admin-hint admin-hint--flush">在下方各联系人卡片中展开「我的故事」，填写标题、正文与配图后点「保存全部」。内容会显示在名片页二维码下方；未填写则不显示。</p>
+      <p class="admin-hint admin-hint--flush">在下方各联系人卡片中展开「我的故事」，填写标题、正文与配图后点「保存全部」。内容固定显示在名片页二维码下方；未填写时显示占位提示。</p>
     </div>
     <div class="admin-card">
       <div class="admin-row">

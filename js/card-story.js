@@ -34,13 +34,14 @@ function storyEsc(str) {
   return d.innerHTML;
 }
 
-async function buildCardStoryHTML(card) {
+async function buildCardStoryHTML(card, options = {}) {
   const story = ensureContactStory(card);
   const paragraphs = story.paragraphs.map(p => p.trim()).filter(Boolean);
   const images = story.images || [];
-  if (!paragraphs.length && !images.length) return "";
-
   const title = story.title || DEFAULT_CONTACT_STORY.title;
+  const hasContent = paragraphs.length > 0 || images.length > 0;
+  if (!hasContent && !options.alwaysShow) return "";
+
   const textHtml = paragraphs.map(p => `<p class="card-story-text">${storyEsc(p)}</p>`).join("");
   const imageHtml = (await Promise.all(images.map(async ref => {
     const url = await CMS.getMediaUrl(ref);
@@ -49,10 +50,14 @@ async function buildCardStoryHTML(card) {
       : "";
   }))).filter(Boolean).join("");
 
+  const emptyHtml = hasContent
+    ? ""
+    : `<p class="card-story-empty">故事筹备中，敬请期待。</p>`;
+
   return `
       <section class="card-story" aria-labelledby="card-story-heading">
         <h4 class="card-story-title" id="card-story-heading">${storyEsc(title)}</h4>
-        ${textHtml ? `<div class="card-story-texts">${textHtml}</div>` : ""}
+        ${textHtml ? `<div class="card-story-texts">${textHtml}</div>` : emptyHtml}
         ${imageHtml ? `<div class="card-story-images">${imageHtml}</div>` : ""}
       </section>`;
 }
