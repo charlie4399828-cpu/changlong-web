@@ -2,6 +2,7 @@ const ADMIN_UNLOCK_KEY = "changlong_admin_unlocked";
 const DEFAULT_ADMIN_PASSWORD = "CLCY64583329";
 
 let adminAppReady = false;
+let cmsInitPromise = null;
 
 function getAdminPassword() {
   const pw = CMS.data?.site?.adminPassword;
@@ -21,6 +22,17 @@ function clearAdminUnlock() {
   sessionStorage.removeItem(ADMIN_UNLOCK_KEY);
 }
 
+function ensureCmsReady() {
+  if (CMS?.data) return Promise.resolve(CMS.data);
+  if (!cmsInitPromise && typeof CMS !== "undefined") {
+    cmsInitPromise = CMS.init().catch(err => {
+      cmsInitPromise = null;
+      throw err;
+    });
+  }
+  return cmsInitPromise || Promise.resolve();
+}
+
 function setPasswordFieldVisible(input, visible) {
   if (!input) return;
   input.type = visible ? "text" : "password";
@@ -28,12 +40,10 @@ function setPasswordFieldVisible(input, visible) {
 }
 
 function bindPasswordToggle(input, button) {
-  if (!input || !button) return;
-  if (button.dataset.bound) return;
+  if (!input || !button || button.dataset.bound) return;
   button.dataset.bound = "1";
 
   button.addEventListener("mousedown", e => e.preventDefault());
-
   button.addEventListener("click", e => {
     e.preventDefault();
     e.stopPropagation();
@@ -50,101 +60,54 @@ function bindPasswordToggle(input, button) {
   });
 }
 
-function initAdminGatePasswordToggle() {
-  bindPasswordToggle(
-    document.getElementById("admin-gate-password"),
-    document.getElementById("admin-gate-toggle-pw")
-  );
+function showGateNotice(msg, variant = "info") {
+  const notice = document.getElementById("admin-gate-notice");
+  if (!notice) {
+    if (typeof toast === "function") toast(msg, { variant });
+    return;
+  }
+  notice.textContent = msg;
+  notice.classList.remove("admin-gate-notice--error", "admin-gate-notice--success");
+  if (variant === "error") notice.classList.add("admin-gate-notice--error");
+  if (variant === "success") notice.classList.add("admin-gate-notice--success");
+  notice.hidden = false;
+  notice.classList.add("show");
+  clearTimeout(showGateNotice._timer);
+  showGateNotice._timer = setTimeout(() => {
+    notice.classList.remove("show");
+    notice.hidden = true;
+  }, variant === "error" ? 3200 : 2400);
 }
 
-document.addEventListener("DOMContentLoaded", initAdminGatePasswordToggle);
-
-function showAdminGate(onSuccess) {
-  const gate = document.getElementById("admin-gate");
-  const app = document.getElementById("admin-app");
-  const form = document.getElementById("admin-gate-form");
+function resetGateForm() {
   const input = document.getElementById("admin-gate-password");
   const toggle = document.getElementById("admin-gate-toggle-pw");
   const err = document.getElementById("admin-gate-error");
-  const submitBtn = form?.querySelector(".admin-gate-submit");
+  const submitBtn = document.querySelector(".admin-gate-submit");
 
-  if (!gate || !app) {
-    onSuccess?.();
-    return;
-  }
-
-  gate.hidden = false;
-  app.hidden = true;
   if (input) {
     input.value = "";
     setPasswordFieldVisible(input, false);
-    setTimeout(() => input.focus(), 50);
   }
   if (toggle) {
     toggle.classList.remove("is-visible");
     toggle.setAttribute("aria-pressed", "false");
     toggle.setAttribute("aria-label", "显示密码");
-    initAdminGatePasswordToggle();
   }
   if (err) err.hidden = true;
-  if (submitBtn) submitBtn.disabled = false;
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "进入后台";
+  }
+}
 
-  if (!form) return;
-
-  form.onsubmit = async e => {
-    e.preventDefault();
-    const value = (input?.value || "").trim();
-    if (!value) {
-      if (err) {
-        err.textContent = "请输入访问密码";
-        err.hidden = false;
-      }
-      toast("请输入访问密码", { variant: "error" });
-      input?.focus();
-      return;
-    }
-
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "验证中…";
-    }
-
-    const matched = value === getAdminPassword();
-    await new Promise(r => setTimeout(r, matched ? 120 : 0));
-
-    if (matched) {
-      setAdminUnlocked();
-      gate.hidden = true;
-      app.hidden = false;
-      if (err) err.hidden = true;
-      toast("验证成功，正在进入后台");
-      try {
-        await onSuccess?.();
-      } catch (err) {
-        console.error(err);
-        clearAdminUnlock();
-        toast("进入后台失败，请刷新后重试", { variant: "error" });
-        showAdminGate(onSuccess);
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "进入后台";
-        }
-      }
-      return;
-    }
-
-    if (err) {
-      err.textContent = "密码错误，请重试";
-      err.hidden = false;
-    }
-    toast("密码错误，请检查后重试", { variant: "error" });
-    input?.select();
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "进入后台";
-    }
-  };
+function showAdminGate() {
+  const gate = document.getElementById("admin-gate");
+  const app = document.getElementById("admin-app");
+  if (gate) gate.hidden = false;
+  if (app) app.hidden = true;
+  resetGateForm();
+  setTimeout(() => document.getElementById("admin-gate-password")?.focus(), 50);
 }
 
 function revealAdminApp() {
@@ -153,6 +116,81 @@ function revealAdminApp() {
   if (gate) gate.hidden = true;
   if (app) app.hidden = false;
 }
+
+async function handleAdminGateLogin(e) {
+  e.preventDefault();
+
+  const input = document.getElementById("admin-gate-password");
+  const err = document.getElementById("admin-gate-error");
+  const submitBtn = document.querySelector(".admin-gate-submit");
+  const value = (input?.value || "").trim();
+
+  if (!value) {
+    if (err) {
+      err.textContent = "请输入访问密码";
+      err.hidden = false;
+    }
+    showGateNotice("请输入访问密码", "error");
+    input?.focus();
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "验证中…";
+  }
+
+  try {
+    await ensureCmsReady();
+    if (typeof applyAdminSiteBranding === "function") {
+      await applyAdminSiteBranding();
+    }
+
+    const matched = value === getAdminPassword();
+    if (!matched) {
+      if (err) {
+        err.textContent = "密码错误，请重试";
+        err.hidden = false;
+      }
+      showGateNotice("登录失败，密码错误", "error");
+      if (typeof toast === "function") toast("登录失败，密码错误", { variant: "error" });
+      input?.select();
+      return;
+    }
+
+    setAdminUnlocked();
+    showGateNotice("登录成功，正在进入后台", "success");
+    if (typeof toast === "function") toast("登录成功", { variant: "success" });
+
+    revealAdminApp();
+    await startAdminApp();
+  } catch (loginErr) {
+    console.error(loginErr);
+    clearAdminUnlock();
+    showAdminGate();
+    showGateNotice("进入后台失败，请刷新后重试", "error");
+    if (typeof toast === "function") toast("进入后台失败，请刷新后重试", { variant: "error" });
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "进入后台";
+    }
+  }
+}
+
+function initAdminGate() {
+  bindPasswordToggle(
+    document.getElementById("admin-gate-password"),
+    document.getElementById("admin-gate-toggle-pw")
+  );
+
+  const form = document.getElementById("admin-gate-form");
+  if (!form || form.dataset.loginBound) return;
+  form.dataset.loginBound = "1";
+  form.addEventListener("submit", handleAdminGateLogin);
+}
+
+document.addEventListener("DOMContentLoaded", initAdminGate);
 
 function renderPasswordPanel() {
   const el = document.getElementById("panel-password");
@@ -200,7 +238,7 @@ function renderPasswordPanel() {
     clearAdminUnlock();
     await saveAll(true, { syncCloud: true });
     toast("密码已更新，请用新密码重新登录");
-    showAdminGate(startAdminApp);
+    showAdminGate();
   };
 }
 
@@ -214,13 +252,20 @@ async function startAdminApp() {
   adminAppReady = true;
 
   reloadProductMasterList();
-  await applyAdminSiteBranding();
-  await maybeAutoSyncLocalToCloud();
   bindNav();
   renderAllPanels();
 
+  if (typeof applyAdminSiteBranding === "function") {
+    applyAdminSiteBranding().catch(console.warn);
+  }
+
+  if (typeof maybeAutoSyncLocalToCloud === "function") {
+    maybeAutoSyncLocalToCloud().catch(console.warn);
+  }
+
   const saveBtn = document.getElementById("btn-save-all");
-  if (saveBtn) {
+  if (saveBtn && !saveBtn.dataset.bound) {
+    saveBtn.dataset.bound = "1";
     saveBtn.addEventListener("click", async () => {
       saveBtn.disabled = true;
       saveBtn.textContent = "保存中…";
@@ -234,7 +279,8 @@ async function startAdminApp() {
   }
 
   const previewBtn = document.getElementById("btn-preview");
-  if (previewBtn) {
+  if (previewBtn && !previewBtn.dataset.bound) {
+    previewBtn.dataset.bound = "1";
     previewBtn.addEventListener("click", async e => {
       e.preventDefault();
       previewBtn.style.pointerEvents = "none";
@@ -243,7 +289,10 @@ async function startAdminApp() {
     });
   }
 
-  window.addEventListener("beforeunload", () => {
-    if (autoSaveTimer) CMS.save(productMasterList, { syncCloud: false });
-  });
+  if (!window.__adminBeforeUnloadBound) {
+    window.__adminBeforeUnloadBound = true;
+    window.addEventListener("beforeunload", () => {
+      if (autoSaveTimer) CMS.save(productMasterList, { syncCloud: false });
+    });
+  }
 }

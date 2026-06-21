@@ -299,21 +299,21 @@ async function maybeAutoSyncLocalToCloud() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await CMS.init();
-  await applyAdminSiteBranding();
-
-  if (!isAdminUnlocked()) {
-    showAdminGate(startAdminApp);
-    return;
-  }
-
   try {
-    await startAdminApp();
+    await ensureCmsReady();
+    await applyAdminSiteBranding();
+
+    if (isAdminUnlocked()) {
+      revealAdminApp();
+      await startAdminApp();
+      return;
+    }
+
+    showAdminGate();
   } catch (err) {
     console.error(err);
-    clearAdminUnlock();
-    toast("进入后台失败，请重新登录", { variant: "error" });
-    showAdminGate(startAdminApp);
+    showAdminGate();
+    showGateNotice("页面加载失败，请刷新后重试", "error");
   }
 });
 
@@ -1419,13 +1419,13 @@ function toast(msg, options = {}) {
   const t = document.getElementById("toast");
   if (!t) return;
   t.textContent = msg;
-  t.classList.remove("admin-toast--error");
+  t.classList.remove("admin-toast--error", "admin-toast--success");
   if (options.variant === "error") t.classList.add("admin-toast--error");
+  if (options.variant === "success") t.classList.add("admin-toast--success");
   t.classList.add("show");
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => {
-    t.classList.remove("show");
-    t.classList.remove("admin-toast--error");
+    t.classList.remove("show", "admin-toast--error", "admin-toast--success");
   }, options.duration || 2800);
 }
 
