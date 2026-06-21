@@ -2,6 +2,7 @@ const ADMIN_UNLOCK_KEY = "changlong_admin_unlocked";
 const DEFAULT_ADMIN_PASSWORD = "CLCY64583329";
 
 let adminAppReady = false;
+let adminSessionActive = false;
 let cmsInitPromise = null;
 
 function getAdminPassword() {
@@ -20,6 +21,8 @@ function setAdminUnlocked() {
 
 function clearAdminUnlock() {
   sessionStorage.removeItem(ADMIN_UNLOCK_KEY);
+  adminSessionActive = false;
+  document.body.classList.remove("admin-session-active");
 }
 
 function ensureCmsReady() {
@@ -31,6 +34,22 @@ function ensureCmsReady() {
     });
   }
   return cmsInitPromise || Promise.resolve();
+}
+
+function enterAdminDashboard() {
+  adminSessionActive = true;
+  document.body.classList.add("admin-session-active");
+
+  const gate = document.getElementById("admin-gate");
+  const app = document.getElementById("admin-app");
+  if (gate) {
+    gate.hidden = true;
+    gate.setAttribute("aria-hidden", "true");
+  }
+  if (app) {
+    app.hidden = false;
+    app.removeAttribute("aria-hidden");
+  }
 }
 
 function setPasswordFieldVisible(input, visible) {
@@ -102,19 +121,23 @@ function resetGateForm() {
 }
 
 function showAdminGate() {
+  if (adminSessionActive || isAdminUnlocked()) return;
+
+  adminSessionActive = false;
+  document.body.classList.remove("admin-session-active");
+
   const gate = document.getElementById("admin-gate");
   const app = document.getElementById("admin-app");
-  if (gate) gate.hidden = false;
-  if (app) app.hidden = true;
+  if (gate) {
+    gate.hidden = false;
+    gate.removeAttribute("aria-hidden");
+  }
+  if (app) {
+    app.hidden = true;
+    app.setAttribute("aria-hidden", "true");
+  }
   resetGateForm();
   setTimeout(() => document.getElementById("admin-gate-password")?.focus(), 50);
-}
-
-function revealAdminApp() {
-  const gate = document.getElementById("admin-gate");
-  const app = document.getElementById("admin-app");
-  if (gate) gate.hidden = true;
-  if (app) app.hidden = false;
 }
 
 async function handleAdminGateLogin(e) {
@@ -146,8 +169,7 @@ async function handleAdminGateLogin(e) {
       await applyAdminSiteBranding();
     }
 
-    const matched = value === getAdminPassword();
-    if (!matched) {
+    if (value !== getAdminPassword()) {
       if (err) {
         err.textContent = "密码错误，请重试";
         err.hidden = false;
@@ -159,17 +181,23 @@ async function handleAdminGateLogin(e) {
     }
 
     setAdminUnlocked();
+    enterAdminDashboard();
     showGateNotice("登录成功，正在进入后台", "success");
     if (typeof toast === "function") toast("登录成功", { variant: "success" });
 
-    revealAdminApp();
     await startAdminApp();
   } catch (loginErr) {
     console.error(loginErr);
-    clearAdminUnlock();
-    showAdminGate();
-    showGateNotice("进入后台失败，请刷新后重试", "error");
-    if (typeof toast === "function") toast("进入后台失败，请刷新后重试", { variant: "error" });
+    if (!adminSessionActive) {
+      clearAdminUnlock();
+      showAdminGate();
+      showGateNotice("登录失败，请重试", "error");
+      if (typeof toast === "function") toast("登录失败，请重试", { variant: "error" });
+    } else {
+      if (typeof toast === "function") {
+        toast("后台部分功能加载失败，请刷新页面", { variant: "error" });
+      }
+    }
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -243,56 +271,62 @@ function renderPasswordPanel() {
 }
 
 async function startAdminApp() {
-  revealAdminApp();
+  enterAdminDashboard();
 
-  if (adminAppReady) {
-    renderAllPanels();
-    return;
-  }
-  adminAppReady = true;
+  try {
+    if (!adminAppReady) {
+      adminAppReady = true;
+      if (typeof reloadProductMasterList === "function") reloadProductMasterList();
+      if (typeof bindNav === "function") bindNav();
+      if (typeof renderAllPanels === "function") renderAllPanels();
 
-  reloadProductMasterList();
-  bindNav();
-  renderAllPanels();
-
-  if (typeof applyAdminSiteBranding === "function") {
-    applyAdminSiteBranding().catch(console.warn);
-  }
-
-  if (typeof maybeAutoSyncLocalToCloud === "function") {
-    maybeAutoSyncLocalToCloud().catch(console.warn);
-  }
-
-  const saveBtn = document.getElementById("btn-save-all");
-  if (saveBtn && !saveBtn.dataset.bound) {
-    saveBtn.dataset.bound = "1";
-    saveBtn.addEventListener("click", async () => {
-      saveBtn.disabled = true;
-      saveBtn.textContent = "保存中…";
-      try {
-        await saveAll(true, { syncCloud: true });
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = "保存全部";
+      const saveBtn = document.getElementById("btn-save-all");
+      if (saveBtn && !saveBtn.dataset.bound) {
+        saveBtn.dataset.bound = "1";
+        saveBtn.addEventListener("click", async () => {
+          saveBtn.disabled = true;
+          saveBtn.textContent = "保存中…";
+          try {
+            await saveAll(true, { syncCloud: true });
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "保存全部";
+          }
+        });
       }
-    });
-  }
 
-  const previewBtn = document.getElementById("btn-preview");
-  if (previewBtn && !previewBtn.dataset.bound) {
-    previewBtn.dataset.bound = "1";
-    previewBtn.addEventListener("click", async e => {
-      e.preventDefault();
-      previewBtn.style.pointerEvents = "none";
-      await saveAll(false, { syncCloud: false });
-      window.location.href = "index.html";
-    });
-  }
+      const previewBtn = document.getElementById("btn-preview");
+      if (previewBtn && !previewBtn.dataset.bound) {
+        previewBtn.dataset.bound = "1";
+        previewBtn.addEventListener("click", async e => {
+          e.preventDefault();
+          previewBtn.style.pointerEvents = "none";
+          await saveAll(false, { syncCloud: false });
+          window.location.href = "index.html";
+        });
+      }
 
-  if (!window.__adminBeforeUnloadBound) {
-    window.__adminBeforeUnloadBound = true;
-    window.addEventListener("beforeunload", () => {
-      if (autoSaveTimer) CMS.save(productMasterList, { syncCloud: false });
-    });
+      if (!window.__adminBeforeUnloadBound) {
+        window.__adminBeforeUnloadBound = true;
+        window.addEventListener("beforeunload", () => {
+          if (autoSaveTimer) CMS.save(productMasterList, { syncCloud: false });
+        });
+      }
+    } else if (typeof renderAllPanels === "function") {
+      renderAllPanels();
+    }
+
+    if (typeof applyAdminSiteBranding === "function") {
+      applyAdminSiteBranding().catch(console.warn);
+    }
+    if (typeof maybeAutoSyncLocalToCloud === "function") {
+      maybeAutoSyncLocalToCloud().catch(console.warn);
+    }
+  } catch (err) {
+    console.error("startAdminApp failed:", err);
+    if (typeof toast === "function") {
+      toast("后台加载异常，请刷新页面", { variant: "error" });
+    }
+    throw err;
   }
 }

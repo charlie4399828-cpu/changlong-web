@@ -304,16 +304,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     await applyAdminSiteBranding();
 
     if (isAdminUnlocked()) {
-      revealAdminApp();
       await startAdminApp();
       return;
     }
 
-    showAdminGate();
+    if (!adminSessionActive) {
+      showAdminGate();
+    }
   } catch (err) {
     console.error(err);
-    showAdminGate();
-    showGateNotice("页面加载失败，请刷新后重试", "error");
+    if (!adminSessionActive) {
+      showAdminGate();
+      showGateNotice("页面加载失败，请刷新后重试", "error");
+    }
   }
 });
 

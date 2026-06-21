@@ -16,6 +16,24 @@ body {
   min-height: 100vh;
 }
 
+#admin-gate[hidden],
+#admin-gate[aria-hidden="true"] {
+  display: none !important;
+}
+
+#admin-app[hidden],
+#admin-app[aria-hidden="true"] {
+  display: none !important;
+}
+
+body.admin-session-active #admin-gate {
+  display: none !important;
+}
+
+body.admin-session-active #admin-app {
+  display: grid !important;
+}
+
 .admin-sidebar {
   background: var(--color-rice);
   border-right: 1px solid var(--color-ink-light);
