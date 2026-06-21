@@ -1753,12 +1753,29 @@ ul { list-style: none; }
   text-align: left;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .business-card--page .card-story {
+    animation: cardStoryIn var(--duration-normal) var(--ease-out-expo) both;
+  }
+}
+
+@keyframes cardStoryIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .card-story-title {
   font-family: var(--font-serif);
   font-size: 1rem;
   font-weight: 500;
   color: var(--color-ink-deep);
-  letter-spacing: 0.2em;
+  letter-spacing: 0.12em;
   text-align: center;
   margin-bottom: var(--space-md);
 }
@@ -1775,6 +1792,8 @@ ul { list-style: none; }
   line-height: 1.85;
   color: var(--color-ink-soft);
   letter-spacing: 0.04em;
+  max-width: 65ch;
+  margin-inline: auto;
 }
 
 .card-story-images {
@@ -1783,18 +1802,33 @@ ul { list-style: none; }
   gap: var(--space-sm);
 }
 
+.card-story-figure {
+  margin: 0;
+}
+
 .card-story-image {
   width: 100%;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-ink-light);
   object-fit: cover;
   display: block;
+  background: var(--color-white);
 }
 
 .business-card--page .card-story-image {
-  max-height: 320px;
+  max-height: min(320px, 50dvh);
   object-fit: contain;
-  background: var(--color-white);
+}
+
+@media (max-width: 768px) {
+  .card-story {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+  }
+
+  .card-story-title {
+    font-size: 0.95rem;
+  }
 }
 
 /* ========== 页脚 ========== */

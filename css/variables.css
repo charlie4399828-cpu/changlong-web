@@ -4,6 +4,7 @@
   --color-paper: #faf8f4;
   --color-ink-light: #e8e4dc;
   --color-ink: #5c5a56;
+  --color-ink-soft: #6f6d68;
   --color-ink-deep: #3d3b38;
   --color-celadon: #a8c4b8;
   --color-celadon-light: #d4e4dc;
@@ -13,6 +14,7 @@
   --color-white: #ffffff;
   --color-shadow: rgba(61, 59, 56, 0.08);
   --color-shadow-deep: rgba(61, 59, 56, 0.15);
+  --color-error: #a04545;
 
   /* 字体 */
   --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;

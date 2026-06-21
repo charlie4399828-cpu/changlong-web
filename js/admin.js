@@ -8,12 +8,8 @@ const PANEL_TITLES = {
   password: "密码管理"
 };
 
-const ADMIN_UNLOCK_KEY = "changlong_admin_unlocked";
-const DEFAULT_ADMIN_PASSWORD = "CLCY64583329";
-
 let autoSaveTimer = null;
 let productMasterList = null;
-let adminAppReady = false;
 const productPanelState = { page: 1, pageSize: 10 };
 
 function showConfirmDialog(message, options = {}) {
@@ -312,103 +308,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await startAdminApp();
 });
-
-function getAdminPassword() {
-  return CMS.data?.site?.adminPassword || DEFAULT_ADMIN_PASSWORD;
-}
-
-function isAdminUnlocked() {
-  return sessionStorage.getItem(ADMIN_UNLOCK_KEY) === getAdminPassword();
-}
-
-function setAdminUnlocked() {
-  sessionStorage.setItem(ADMIN_UNLOCK_KEY, getAdminPassword());
-}
-
-function clearAdminUnlock() {
-  sessionStorage.removeItem(ADMIN_UNLOCK_KEY);
-}
-
-function showAdminGate(onSuccess) {
-  const gate = document.getElementById("admin-gate");
-  const app = document.getElementById("admin-app");
-  const form = document.getElementById("admin-gate-form");
-  const input = document.getElementById("admin-gate-password");
-  const err = document.getElementById("admin-gate-error");
-
-  if (!gate || !app) {
-    onSuccess?.();
-    return;
-  }
-
-  gate.hidden = false;
-  app.hidden = true;
-  if (input) {
-    input.value = "";
-    setTimeout(() => input.focus(), 50);
-  }
-  if (err) err.hidden = true;
-
-  if (!form) return;
-
-  form.onsubmit = e => {
-    e.preventDefault();
-    const value = input?.value || "";
-    if (value === getAdminPassword()) {
-      setAdminUnlocked();
-      gate.hidden = true;
-      app.hidden = false;
-      if (err) err.hidden = true;
-      onSuccess?.();
-      return;
-    }
-    if (err) {
-      err.textContent = "密码错误，请重试";
-      err.hidden = false;
-    }
-    if (input) input.select();
-  };
-}
-
-async function startAdminApp() {
-  const gate = document.getElementById("admin-gate");
-  const app = document.getElementById("admin-app");
-  if (gate) gate.hidden = true;
-  if (app) app.hidden = false;
-
-  if (adminAppReady) {
-    renderAllPanels();
-    return;
-  }
-  adminAppReady = true;
-
-  reloadProductMasterList();
-  await applyAdminSiteBranding();
-  await maybeAutoSyncLocalToCloud();
-  bindNav();
-  renderAllPanels();
-  document.getElementById("btn-save-all").addEventListener("click", async () => {
-    const btn = document.getElementById("btn-save-all");
-    btn.disabled = true;
-    btn.textContent = "保存中…";
-    try {
-      await saveAll(true, { syncCloud: true });
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "保存全部";
-    }
-  });
-  document.getElementById("btn-preview").addEventListener("click", async e => {
-    e.preventDefault();
-    const link = e.currentTarget;
-    link.style.pointerEvents = "none";
-    await saveAll(false, { syncCloud: false });
-    window.location.href = "index.html";
-  });
-  window.addEventListener("beforeunload", () => {
-    if (autoSaveTimer) CMS.save(productMasterList, { syncCloud: false });
-  });
-}
 
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimer);
@@ -760,7 +659,7 @@ function renderProductsPanel() {
       </div>
       <div id="products-table-body"></div>
       <div class="admin-product-footer">
-        <span class="admin-product-range">${total ? `显示第 ${start + 1}–${Math.min(start + pageSize, total)} 条，共 ${total} 款` : "暂无商品"}</span>
+        <span class="admin-product-range">${total ? `显示第 ${start + 1}-${Math.min(start + pageSize, total)} 条，共 ${total} 款` : "暂无商品"}</span>
         <div class="admin-pagination" data-product-pagination></div>
       </div>
     </div>`;
@@ -1073,49 +972,20 @@ function createProductEditorForm(product, index) {
 }
 
 async function renderProductGalleryList(product, listEl) {
-  if (!listEl) return;
-  const gallery = product.gallery || [];
-  if (!gallery.length) {
-    listEl.innerHTML = `<p class="admin-hint" style="margin:0;">暂无实拍图</p>`;
-    return;
-  }
-
-  const rows = await Promise.all(gallery.map(async (ref, i) => {
-    const url = await CMS.getMediaUrl(ref);
-    return `
-      <div class="admin-gallery-item" data-gi="${i}">
-        <img class="admin-gallery-thumb" src="${url || ""}" alt="实拍 ${i + 1}">
-        <span class="admin-gallery-index">第 ${i + 1} 张</span>
-        <div class="admin-order-btns">
-          <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-gup ${i === 0 ? "disabled" : ""}>↑</button>
-          <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-gdown ${i >= gallery.length - 1 ? "disabled" : ""}>↓</button>
-          <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-gdel>删</button>
-        </div>
-      </div>`;
-  }));
-
-  listEl.innerHTML = rows.join("");
-
-  listEl.querySelectorAll(".admin-gallery-item").forEach(row => {
-    const i = +row.dataset.gi;
-    row.querySelector("[data-gup]")?.addEventListener("click", () => {
-      if (i <= 0) return;
-      [product.gallery[i], product.gallery[i - 1]] = [product.gallery[i - 1], product.gallery[i]];
+  await renderAdminImageGallery(listEl, product.gallery || [], {
+    emptyHint: "暂无实拍图",
+    altPrefix: "实拍",
+    deleteMessage: i => `确定删除「${product.name}」的第 ${i + 1} 张实拍图吗？`,
+    onReorder: (from, to) => {
+      [product.gallery[from], product.gallery[to]] = [product.gallery[to], product.gallery[from]];
       scheduleAutoSave();
       renderProductGalleryList(product, listEl);
-    });
-    row.querySelector("[data-gdown]")?.addEventListener("click", () => {
-      if (i >= product.gallery.length - 1) return;
-      [product.gallery[i], product.gallery[i + 1]] = [product.gallery[i + 1], product.gallery[i]];
-      scheduleAutoSave();
-      renderProductGalleryList(product, listEl);
-    });
-    row.querySelector("[data-gdel]")?.addEventListener("click", async () => {
-      if (!await confirmDelete(`确定删除「${product.name}」的第 ${i + 1} 张实拍图吗？`)) return;
+    },
+    onDelete: i => {
       product.gallery.splice(i, 1);
       scheduleAutoSave();
       renderProductGalleryList(product, listEl);
-    });
+    }
   });
 }
 
@@ -1162,9 +1032,7 @@ function renderContactPanel() {
 }
 
 function createContactCardEditor(card, index) {
-  CMS.normalizeContactCards();
-  if (!card.story) card.story = { title: "我的故事", paragraphs: [], images: [] };
-  const storyText = (card.story.paragraphs || []).join("\n\n");
+  ensureContactStory(card);
 
   const div = document.createElement("div");
   div.className = "admin-slide-item";
@@ -1193,22 +1061,7 @@ function createContactCardEditor(card, index) {
         <div class="admin-upload"><input type="file" accept="image/*" data-upload="qr"><div class="qr-preview-wrap"></div></div>
       </div>
     </div>
-    <div class="admin-card" style="margin-top:var(--space-md);">
-      <div class="admin-card-title">我的故事</div>
-      <p class="admin-hint" style="margin-top:0;">显示在电子名片二维码下方，可添加文字与配图介绍此人。</p>
-      <div class="admin-field"><label>故事标题</label><input data-story-title value="${escAttr(card.story.title || "我的故事")}"></div>
-      <div class="admin-field">
-        <label>故事正文</label>
-        <textarea data-story-text rows="5" placeholder="每段之间空一行，名片页将分段展示">${escHtml(storyText)}</textarea>
-      </div>
-      <div class="admin-field">
-        <label>故事配图</label>
-        <div class="admin-gallery-list" data-story-gallery></div>
-        <div class="admin-upload" style="margin-top:8px;">
-          <input type="file" accept="image/*" multiple data-story-upload>
-        </div>
-      </div>
-    </div>
+    ${contactStoryEditorHTML(card)}
     <div class="admin-actions">
       <button class="admin-btn admin-btn-danger admin-btn-sm" data-del ${CMS.data.contact.cards.length <= 1 ? "disabled" : ""}>删除此人</button>
     </div>`;
@@ -1217,41 +1070,22 @@ function createContactCardEditor(card, index) {
   setupMediaUpload(div.querySelector('[data-upload="avatar"]'), card, "avatar", div.querySelector(".avatar-preview-wrap"), { cropSlot: "avatar" });
   setupMediaUpload(div.querySelector('[data-upload="qr"]'), card, "qr", div.querySelector(".qr-preview-wrap"), { cropSlot: "qr" });
 
-  const storyGallery = div.querySelector("[data-story-gallery]");
-  renderStoryGalleryList(card, storyGallery);
-
-  const storyTitleInput = div.querySelector("[data-story-title]");
-  storyTitleInput?.addEventListener("input", () => {
-    card.story.title = storyTitleInput.value;
-    scheduleAutoSave();
-  });
-
-  const storyTextInput = div.querySelector("[data-story-text]");
-  storyTextInput?.addEventListener("input", () => {
-    card.story.paragraphs = storyTextInput.value
-      .split(/\n\s*\n/)
-      .map(s => s.trim())
-      .filter(Boolean);
-    scheduleAutoSave();
-  });
-
-  div.querySelector("[data-story-upload]")?.addEventListener("change", async e => {
-    const files = [...(e.target.files || [])];
-    if (!files.length) return;
-    try {
-      for (const file of files) {
-        const processed = await processImageUpload(file, "story");
-        const id = await CMS.uploadFile(processed);
-        if (!card.story.images) card.story.images = [];
-        card.story.images.push(id);
+  bindContactStoryEditor(div, card, {
+    onChange: scheduleAutoSave,
+    renderGallery: listEl => renderContactStoryGallery(card, listEl),
+    uploadFiles: async files => {
+      try {
+        for (const file of files) {
+          const processed = await processImageUpload(file, "story");
+          const id = await CMS.uploadFile(processed);
+          card.story.images.push(id);
+        }
+        scheduleAutoSave();
+        toast("故事配图已上传");
+      } catch (err) {
+        if (err.message !== "cancelled") toast(err.message || "上传失败");
       }
-      scheduleAutoSave();
-      renderStoryGalleryList(card, storyGallery);
-      toast("故事配图已上传");
-    } catch (err) {
-      if (err.message !== "cancelled") toast(err.message || "上传失败");
     }
-    e.target.value = "";
   });
 
   const delBtn = div.querySelector("[data-del]");
@@ -1267,92 +1101,23 @@ function createContactCardEditor(card, index) {
   return div;
 }
 
-async function renderStoryGalleryList(card, listEl) {
-  if (!listEl) return;
-  const gallery = card.story?.images || [];
-  if (!gallery.length) {
-    listEl.innerHTML = `<p class="admin-hint" style="margin:0;">暂无配图</p>`;
-    return;
-  }
-
-  const rows = await Promise.all(gallery.map(async (ref, i) => {
-    const url = await CMS.getMediaUrl(ref);
-    return `
-      <div class="admin-gallery-item" data-gi="${i}">
-        <img class="admin-gallery-thumb" src="${url || ""}" alt="故事配图 ${i + 1}">
-        <span class="admin-gallery-index">第 ${i + 1} 张</span>
-        <div class="admin-order-btns">
-          <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-gup ${i === 0 ? "disabled" : ""}>↑</button>
-          <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" data-gdown ${i >= gallery.length - 1 ? "disabled" : ""}>↓</button>
-          <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-gdel>删</button>
-        </div>
-      </div>`;
-  }));
-
-  listEl.innerHTML = rows.join("");
-
-  listEl.querySelectorAll(".admin-gallery-item").forEach(row => {
-    const i = +row.dataset.gi;
-    row.querySelector("[data-gup]")?.addEventListener("click", () => {
-      if (i <= 0) return;
-      [card.story.images[i], card.story.images[i - 1]] = [card.story.images[i - 1], card.story.images[i]];
+async function renderContactStoryGallery(card, listEl) {
+  ensureContactStory(card);
+  await renderAdminImageGallery(listEl, card.story.images, {
+    emptyHint: "暂无配图",
+    altPrefix: "故事配图",
+    deleteMessage: i => `确定删除「${card.name}」故事配图第 ${i + 1} 张吗？`,
+    onReorder: (from, to) => {
+      [card.story.images[from], card.story.images[to]] = [card.story.images[to], card.story.images[from]];
       scheduleAutoSave();
-      renderStoryGalleryList(card, listEl);
-    });
-    row.querySelector("[data-gdown]")?.addEventListener("click", () => {
-      if (i >= card.story.images.length - 1) return;
-      [card.story.images[i], card.story.images[i + 1]] = [card.story.images[i + 1], card.story.images[i]];
-      scheduleAutoSave();
-      renderStoryGalleryList(card, listEl);
-    });
-    row.querySelector("[data-gdel]")?.addEventListener("click", async () => {
-      if (!await confirmDelete(`确定删除「${card.name}」故事配图第 ${i + 1} 张吗？`)) return;
+      renderContactStoryGallery(card, listEl);
+    },
+    onDelete: i => {
       card.story.images.splice(i, 1);
       scheduleAutoSave();
-      renderStoryGalleryList(card, listEl);
-    });
+      renderContactStoryGallery(card, listEl);
+    }
   });
-}
-
-function renderPasswordPanel() {
-  const el = document.getElementById("panel-password");
-  if (!el) return;
-
-  el.innerHTML = `
-    <div class="admin-card">
-      <div class="admin-card-title">后台访问密码</div>
-      <p class="admin-hint" style="margin-top:0;">进入「内容管理」时需输入此密码。修改密码后需重新登录，并点击「保存全部」同步到云端。</p>
-      <div class="admin-field"><label>当前密码</label><input type="password" id="pw-current" autocomplete="current-password"></div>
-      <div class="admin-field"><label>新密码</label><input type="password" id="pw-new" autocomplete="new-password"></div>
-      <div class="admin-field"><label>确认新密码</label><input type="password" id="pw-confirm" autocomplete="new-password"></div>
-      <button type="button" class="admin-btn admin-btn-primary" id="btn-change-pw">更新密码</button>
-    </div>`;
-
-  document.getElementById("btn-change-pw").onclick = async () => {
-    const current = document.getElementById("pw-current").value;
-    const newPw = document.getElementById("pw-new").value;
-    const confirmPw = document.getElementById("pw-confirm").value;
-
-    if (current !== getAdminPassword()) {
-      toast("当前密码不正确");
-      return;
-    }
-    if (!newPw || newPw.length < 6) {
-      toast("新密码至少 6 位");
-      return;
-    }
-    if (newPw !== confirmPw) {
-      toast("两次输入的新密码不一致");
-      return;
-    }
-
-    if (!CMS.data.site) CMS.data.site = {};
-    CMS.data.site.adminPassword = newPw;
-    clearAdminUnlock();
-    await saveAll(true, { syncCloud: true });
-    toast("密码已更新，请用新密码重新登录");
-    showAdminGate(startAdminApp);
-  };
 }
 
 function renderSitePanel() {
