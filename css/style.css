@@ -1746,6 +1746,57 @@ ul { list-style: none; }
   transform: scale(1.03);
 }
 
+.card-story {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-ink-light);
+  text-align: left;
+}
+
+.card-story-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-ink-deep);
+  letter-spacing: 0.2em;
+  text-align: center;
+  margin-bottom: var(--space-md);
+}
+
+.card-story-texts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.card-story-text {
+  font-size: 0.88rem;
+  line-height: 1.85;
+  color: var(--color-ink-soft);
+  letter-spacing: 0.04em;
+}
+
+.card-story-images {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.card-story-image {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-ink-light);
+  object-fit: cover;
+  display: block;
+}
+
+.business-card--page .card-story-image {
+  max-height: 320px;
+  object-fit: contain;
+  background: var(--color-white);
+}
+
 /* ========== 页脚 ========== */
 .footer {
   padding: var(--space-xl) 0;

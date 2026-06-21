@@ -44,7 +44,8 @@ const CMS = {
         footerLogo: "assets/logo.svg",
         footerText: "宋韵茶香 · 温润东方",
         copyright: "© 2026 昌隆茶舍 版权所有",
-        publicUrl: "https://charlie4399828-cpu.github.io/changlong-web/"
+        publicUrl: "https://charlie4399828-cpu.github.io/changlong-web/",
+        adminPassword: "CLCY64583329"
       },
       carousel: { interval: 5000, slides },
       about: {
@@ -91,7 +92,8 @@ const CMS = {
             phone: "13769148246",
             wechat: "y13769148246",
             avatar: "assets/logo-icon.svg",
-            qr: "assets/qr-code.svg"
+            qr: "assets/qr-code.svg",
+            story: { title: "我的故事", paragraphs: [], images: [] }
           },
           {
             id: "store",
@@ -102,7 +104,8 @@ const CMS = {
             phone: "13769148246",
             wechat: "y13769148246",
             avatar: "assets/logo-icon.svg",
-            qr: "assets/qr-code.svg"
+            qr: "assets/qr-code.svg",
+            story: { title: "我的故事", paragraphs: [], images: [] }
           }
         ]
       }
@@ -131,19 +134,37 @@ const CMS = {
   normalizeContact() {
     const c = this.data?.contact;
     if (!c) return;
-    if (c.cards?.length) return;
+    if (!c.cards?.length) {
+      c.cards = [{
+        id: "founder",
+        label: "创始人",
+        name: c.name || "李鑫",
+        jobTitle: c.title || "昌隆茶业 · 创始人",
+        bio: c.bio || "",
+        phone: c.phone || "",
+        wechat: c.wechat || "",
+        avatar: c.avatar || "assets/logo-icon.svg",
+        qr: c.qr || "assets/qr-code.svg",
+        story: { title: "我的故事", paragraphs: [], images: [] }
+      }];
+    }
+    this.normalizeContactCards();
+  },
 
-    c.cards = [{
-      id: "founder",
-      label: "创始人",
-      name: c.name || "李鑫",
-      jobTitle: c.title || "昌隆茶业 · 创始人",
-      bio: c.bio || "",
-      phone: c.phone || "",
-      wechat: c.wechat || "",
-      avatar: c.avatar || "assets/logo-icon.svg",
-      qr: c.qr || "assets/qr-code.svg"
-    }];
+  normalizeContactCards() {
+    const cards = this.data?.contact?.cards;
+    if (!cards) return;
+    cards.forEach(card => {
+      if (!card.story) card.story = { title: "我的故事", paragraphs: [], images: [] };
+      if (!card.story.title) card.story.title = "我的故事";
+      if (!Array.isArray(card.story.paragraphs)) {
+        card.story.paragraphs = card.story.text
+          ? String(card.story.text).split(/\n+/).map(s => s.trim()).filter(Boolean)
+          : [];
+        delete card.story.text;
+      }
+      if (!Array.isArray(card.story.images)) card.story.images = [];
+    });
   },
 
   getContactCard(id) {

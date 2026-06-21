@@ -4,6 +4,7 @@ const IMAGE_SLOTS = {
   avatar: { aspect: 1, maxWidth: 512, quality: 0.9, label: "头像 1:1" },
   qr: { aspect: 1, maxWidth: 512, quality: 0.92, label: "二维码 1:1" },
   product: { aspect: 4 / 3, maxWidth: 960, quality: 0.86, label: "产品图 4:3" },
+  story: { mode: "fit", maxWidth: 960, maxHeight: 720, quality: 0.86, label: "故事配图（保持原比例）" },
   logo: { aspect: 1, maxWidth: 256, quality: 0.9, label: "Logo 1:1" }
 };
 

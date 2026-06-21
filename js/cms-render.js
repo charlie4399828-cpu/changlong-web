@@ -197,10 +197,33 @@ async function renderContact(contact) {
   container.innerHTML = entries.join("");
 }
 
+async function buildCardStoryHTML(card) {
+  const story = card.story;
+  if (!story) return "";
+  const paragraphs = (story.paragraphs || []).map(p => p.trim()).filter(Boolean);
+  const images = story.images || [];
+  if (!paragraphs.length && !images.length) return "";
+
+  const title = story.title || "我的故事";
+  const textHtml = paragraphs.map(p => `<p class="card-story-text">${esc(p)}</p>`).join("");
+  const imageHtml = (await Promise.all(images.map(async ref => {
+    const url = await CMS.getMediaUrl(ref);
+    return url ? `<img class="card-story-image" src="${url}" alt="" loading="lazy" decoding="async">` : "";
+  }))).filter(Boolean).join("");
+
+  return `
+      <section class="card-story">
+        <h4 class="card-story-title">${esc(title)}</h4>
+        ${textHtml ? `<div class="card-story-texts">${textHtml}</div>` : ""}
+        ${imageHtml ? `<div class="card-story-images">${imageHtml}</div>` : ""}
+      </section>`;
+}
+
 async function buildBusinessCardHTML(card, options = {}) {
   const avatarUrl = await CMS.getMediaUrl(card.avatar) || "assets/logo-icon.svg";
   const qrUrl = await CMS.getMediaUrl(card.qr) || "assets/qr-code.svg";
   const pageClass = options.page ? " business-card--page" : "";
+  const storyHtml = options.page ? await buildCardStoryHTML(card) : "";
 
   return `
     <div class="business-card${pageClass}">
@@ -229,7 +252,7 @@ async function buildBusinessCardHTML(card, options = {}) {
       <div class="card-qr">
         <p class="card-qr-label">扫码添加微信</p>
         <img class="card-qr-image" src="${qrUrl}" alt="微信二维码" loading="lazy">
-      </div>
+      </div>${storyHtml}
     </div>`;
 }
 
