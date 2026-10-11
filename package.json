@@ -4,12 +4,14 @@
   "private": true,
   "description": "昌隆茶业官方网站",
   "scripts": {
+    "test": "node --test",
     "start": "npx serve . -l 8080",
     "deploy": "npx vercel --prod",
     "deploy:vercel": "npx vercel --prod",
     "deploy:netlify": "npx netlify deploy --prod --dir=."
   },
   "devDependencies": {
-    "@supabase/supabase-js": "^2.49.8"
+    "@supabase/supabase-js": "^2.49.8",
+    "jsdom": "^30.1.2"
   }
 }

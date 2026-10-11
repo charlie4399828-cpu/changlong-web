@@ -298,28 +298,6 @@ async function maybeAutoSyncLocalToCloud() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await ensureCmsReady();
-    await applyAdminSiteBranding();
-
-    if (isAdminUnlocked()) {
-      await startAdminApp();
-      return;
-    }
-
-    if (!adminSessionActive) {
-      showAdminGate();
-    }
-  } catch (err) {
-    console.error(err);
-    if (!adminSessionActive) {
-      showAdminGate();
-      showGateNotice("页面加载失败，请刷新后重试", "error");
-    }
-  }
-});
-
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimer);
   document.getElementById("save-status").textContent = "编辑中…";

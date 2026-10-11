@@ -24,16 +24,34 @@ function getSiteHomeUrl() {
   return `${origin}/`;
 }
 
-function loadQRCodeLib() {
-  if (window.QRCode) return Promise.resolve(window.QRCode);
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js";
-    script.async = true;
-    script.onload = () => resolve(window.QRCode);
-    script.onerror = () => reject(new Error("QR 库加载失败"));
-    document.head.appendChild(script);
-  });
+// qrcode@1.5.4 的 npm 包未发布 build/qrcode.min.js（404），改用 ESM 动态引入
+const QRCODE_ESM_URLS = [
+  "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm",
+  "https://esm.sh/qrcode@1.5.4"
+];
+
+async function loadQRCodeLib() {
+  if (window.QRCode) return window.QRCode;
+
+  let lastError = null;
+  for (const url of QRCODE_ESM_URLS) {
+    try {
+      const mod = await import(url);
+      // +esm 具名导出 toCanvas；esm.sh 通过 export * 暴露；default 为完整对象
+      const lib = (mod && typeof mod.toCanvas === "function")
+        ? mod
+        : (mod && mod.default) || null;
+      if (lib && typeof lib.toCanvas === "function") {
+        window.QRCode = lib;
+        return lib;
+      }
+      throw new Error("QR 库导出结构异常");
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error("QR 库加载失败");
 }
 
 function useQrFallbackImage(container, url, size) {
